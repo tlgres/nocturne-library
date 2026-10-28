@@ -9,13 +9,15 @@
     lectureIndex: $('lecture-index'), lectureTitle: $('lecture-title'), seriesDescription: $('series-description'),
     progress: $('progress'), progressLabel: $('progress-label'), blockState: $('block-state'), notice: $('notice'), reader: $('reader'),
     prevSection: $('prev-section'), nextSection: $('next-section'), sectionCount: $('section-count'),
-    prevLecture: $('prev-lecture'), nextLecture: $('next-lecture'), status: $('status')
+    prevLecture: $('prev-lecture'), nextLecture: $('next-lecture'), status: $('status'),
+    stage: $('character-stage'), stageStatus: $('stage-status'), stageMessage: $('stage-message'),
+    muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas')
   };
 
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
-    doc: null, slides: [], sectionIndex: 0, interaction: new Map()
+    doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'}
   };
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
@@ -112,7 +114,8 @@
 
   function castHtml(items) {
     if (!items.length) return '';
-    return `<aside class="cast-stack">${items.map(item => `<div class="cast-line" data-speaker="${esc(item.speaker)}"><div class="cast-speaker">${esc(item.speaker)}</div><div class="cast-content">${inlineMarkdown(item.content)}</div></div>`).join('')}</aside>`;
+    const label = speaker => speaker === 'MUTE' ? '뮤트' : speaker === 'ED' ? '이드' : speaker;
+    return `<aside class="cast-stack">${items.map(item => `<div class="cast-line" data-speaker="${esc(item.speaker)}"><div class="cast-speaker">${esc(label(item.speaker))}</div><div class="cast-content">${inlineMarkdown(item.content)}</div></div>`).join('')}</aside>`;
   }
 
   function extrasHtml(slide, slideIndex) {
@@ -177,6 +180,78 @@
     return `<div class="dialogue-scene" data-dialogue-mode="${mode}">${rail}<div class="dialogue-stage">${body || '<div class="dialogue-empty">Dialogue is empty.</div>'}</div>${controls}</div>`;
   }
 
+  function initCharacters() {
+    const Animator = globalThis.NocturneWeb?.CharacterAnimator;
+    if (!Animator || !ui.muteCanvas || !ui.edCanvas) return;
+    state.animators.MUTE = new Animator(ui.muteCanvas, 'MUTE');
+    state.animators.ED = new Animator(ui.edCanvas, 'ED');
+  }
+
+  function stageMotionFor(slide) {
+    const castItems = slide.extras.filter(x => x.type === 'cast');
+    const quizItems = slide.extras.filter(x => x.type === 'quiz');
+    if (quizItems.length) {
+      const quizIndex = slide.extras.indexOf(quizItems[0]);
+      const base = `s${state.sectionIndex}:q${quizIndex}`;
+      const answered = getInteraction(`${base}:result`) || getInteraction(`${base}:revealed`);
+      return answered
+        ? {active:'MUTE', MUTE:'explain', ED:'normal'}
+        : {active:'ED', MUTE:'normal', ED:'curious'};
+    }
+    if (castItems.length) {
+      const last = castItems[castItems.length - 1];
+      const active = last.speaker === 'MUTE' || last.speaker === 'ED' ? last.speaker : '';
+      return {active, MUTE: active === 'MUTE' ? (last.expression || 'normal') : 'normal', ED: active === 'ED' ? (last.expression || 'normal') : 'normal'};
+    }
+    return {active:'', MUTE:'normal', ED:'normal'};
+  }
+
+  function stageExtrasHtml(slide, slideIndex) {
+    if (!slide.extras.length) return '';
+    const chunks = [];
+    let castBuffer = [];
+    const flushCast = () => {
+      if (!castBuffer.length) return;
+      chunks.push(castHtml(castBuffer));
+      castBuffer = [];
+    };
+    slide.extras.forEach((block, i) => {
+      if (block.type === 'cast') castBuffer.push(block);
+      else if (block.type === 'quiz') { flushCast(); chunks.push(quizHtml(block, slideIndex, i)); }
+    });
+    flushCast();
+    return chunks.join('');
+  }
+
+  function renderStage(slide) {
+    if (!ui.stage) return;
+    const primaryType = slide?.primary?.type || 'normal';
+    const extras = slide?.extras || [];
+    const hasQuiz = extras.some(x => x.type === 'quiz');
+    const hasCast = extras.some(x => x.type === 'cast');
+    ui.stage.dataset.blockType = hasQuiz ? 'quiz' : hasCast ? 'cast' : primaryType;
+    ui.stage.classList.toggle('is-dialogue-observer', primaryType === 'dialogue');
+    ui.stage.classList.toggle('has-quiz', hasQuiz);
+    ui.stageStatus.textContent = (hasQuiz ? 'QUIZ' : hasCast ? 'CAST' : primaryType).toUpperCase();
+
+    const message = stageExtrasHtml(slide, state.sectionIndex);
+    ui.stageMessage.innerHTML = message;
+    ui.stageMessage.hidden = !message;
+
+    const motion = stageMotionFor(slide);
+    ui.muteLayer.classList.toggle('is-active-speaker', motion.active === 'MUTE');
+    ui.edLayer.classList.toggle('is-active-speaker', motion.active === 'ED');
+    ui.muteLayer.classList.toggle('is-listener', motion.active !== 'MUTE');
+    ui.edLayer.classList.toggle('is-listener', motion.active !== 'ED');
+    state.stageMotion.MUTE = motion.MUTE;
+    state.stageMotion.ED = motion.ED;
+
+    if (!document.hidden) {
+      state.animators.MUTE?.show(motion.MUTE, true);
+      state.animators.ED?.show(motion.ED, true);
+    }
+  }
+
   function categoryFor(slug) { return state.categories.find(x => x.slug === slug); }
   function positionKey() { return state.meta ? `nocturne:webpos:v1:${state.meta.category}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
   function savePosition() { const key = positionKey(); if (key) localStorage.setItem(key, String(state.sectionIndex)); }
@@ -239,9 +314,7 @@
     const report = Core.validateDocument(source);
     state.doc = Core.parseDocument(source, {allowedSpeakers:['MUTE','ED']});
     state.slides = buildSlides(state.doc.blocks);
-    const deferredDialogue = state.doc.blocks.filter(b => b.type === 'dialogue').length;
-    ui.notice.hidden = deferredDialogue === 0;
-    if (deferredDialogue) ui.notice.textContent = `이 문서에는 ${deferredDialogue}개의 DIALOGUE 블록이 있습니다. Dialogue renderer는 phase 3에서 지원됩니다.`;
+    ui.notice.hidden = true;
     ui.lectureIndex.textContent = `Lecture ${String(state.lectureIndex + 1).padStart(2,'0')} · ${state.meta.lectures.length}`;
     ui.lectureTitle.textContent = state.doc.title || lecture.title || state.meta.title;
     state.sectionIndex = restorePosition();
@@ -253,7 +326,8 @@
     ui.progress.innerHTML = state.slides.map((slide, i) => {
       const hasQuiz = slide.extras.some(x => x.type === 'quiz');
       const hasCast = slide.extras.some(x => x.type === 'cast');
-      return `<button type="button" data-index="${i}" data-type="${esc(slide.primary.type)}" data-quiz="${hasQuiz ? '1' : '0'}" data-cast="${hasCast ? '1' : '0'}" aria-label="${i+1}번째 구간으로 이동"></button>`;
+      const hasChapter = slide.primary.type !== 'dialogue' && /^\s*■\s*/.test(String(slide.primary.content || ''));
+      return `<button type="button" data-index="${i}" data-type="${esc(slide.primary.type)}" data-quiz="${hasQuiz ? '1' : '0'}" data-cast="${hasCast ? '1' : '0'}" data-chapter="${hasChapter ? '1' : '0'}" aria-label="${i+1}번째 구간으로 이동"></button>`;
     }).join('');
     ui.progress.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => goSection(Number(btn.dataset.index))));
   }
@@ -267,9 +341,13 @@
     const primary = slide.primary;
     const keyPrefix = `${state.meta.id}:${state.meta.lectures[state.lectureIndex].id}:s${state.sectionIndex}`;
     const primaryHtml = primary.type === 'dialogue' ? dialogueHtml(primary, state.sectionIndex) : contentHtml(primary.content, keyPrefix);
-    ui.reader.innerHTML = `<article class="section" data-type="${esc(primary.type)}">${primaryHtml}${extrasHtml(slide, state.sectionIndex)}</article>`;
+    ui.reader.innerHTML = `<article class="section" data-type="${esc(primary.type)}">${primaryHtml}</article>`;
+    renderStage(slide);
     bindInteractiveEvents();
     ui.progress.querySelectorAll('button').forEach((b,i) => b.classList.toggle('active', i === state.sectionIndex));
+    const progressPct = state.slides.length <= 1 ? 100 : (state.sectionIndex / (state.slides.length - 1)) * 100;
+    ui.progress.style.setProperty('--progress-pct', `${progressPct}%`);
+    document.body.dataset.activeType = primary.type;
     ui.progressLabel.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
     ui.blockState.textContent = primary.type.toUpperCase();
     ui.sectionCount.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
@@ -279,13 +357,15 @@
   }
 
   function bindInteractiveEvents() {
-    ui.reader.querySelectorAll('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
+    const roots = [ui.reader, ui.stageMessage].filter(Boolean);
+    const all = selector => roots.flatMap(root => [...root.querySelectorAll(selector)]);
+    all('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const key = btn.dataset.clozeKey;
       setInteraction(key, !getInteraction(key));
       renderSection();
     }));
-    ui.reader.querySelectorAll('[data-quiz-action]').forEach(btn => btn.addEventListener('click', e => {
+    all('[data-quiz-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const action = btn.dataset.quizAction;
       const key = btn.dataset.key;
@@ -294,7 +374,7 @@
       if (action === 'self') setInteraction(`${key}:self`, btn.dataset.value);
       renderSection();
     }));
-    ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
+    all('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const action = btn.dataset.dialogueAction;
       const key = btn.dataset.key;
@@ -339,8 +419,19 @@
     if (e.key === 'ArrowLeft') { e.preventDefault(); if (!ui.prevSection.disabled) goSection(state.sectionIndex - 1); }
   });
 
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      state.animators.MUTE?.stop();
+      state.animators.ED?.stop();
+    } else if (state.slides[state.sectionIndex]) {
+      renderStage(state.slides[state.sectionIndex]);
+      bindInteractiveEvents();
+    }
+  });
+
   (async () => {
     try {
+      initCharacters();
       await loadBootData();
       const route = routeSelection();
       await openSeries(route.seriesIdx, route.lectureIdx);

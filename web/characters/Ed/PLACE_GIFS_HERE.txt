@@ -1,0 +1,7 @@
+Place these files here (or use a root-level Ed folder):
+normal.gif
+curious.gif
+ask.gif
+skeptical.gif
+surprised.gif
+smug.gif

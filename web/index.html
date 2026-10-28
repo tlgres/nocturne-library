@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b0c13">
+  <meta name="theme-color" content="#09090e">
   <title>Nocturne Library</title>
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -40,13 +40,46 @@
     </section>
 
     <div id="notice" class="notice" hidden></div>
-    <section id="reader" class="reader" aria-live="polite"></section>
 
-    <nav class="section-nav" aria-label="본문 탐색">
-      <button id="prev-section" type="button">← Prev</button>
-      <div class="section-count" id="section-count">0 / 0</div>
-      <button id="next-section" type="button">Next →</button>
-    </nav>
+    <section class="study-grid" id="study-grid">
+      <div class="study-column">
+        <section id="reader" class="reader" aria-live="polite"></section>
+        <nav class="section-nav" aria-label="본문 탐색">
+          <button id="prev-section" type="button">← Prev</button>
+          <div class="section-count" id="section-count">0 / 0</div>
+          <button id="next-section" type="button">Next →</button>
+        </nav>
+      </div>
+
+      <aside id="character-stage" class="character-stage" aria-label="Nocturne companion stage" data-block-type="normal">
+        <div class="room-vignette" aria-hidden="true"></div>
+        <div class="night-window" aria-hidden="true">
+          <span class="star star-a">✧</span>
+          <span class="star star-b">✦</span>
+          <span class="star star-c">✧</span>
+          <span class="star star-d">✦</span>
+          <span class="star star-e">✧</span>
+          <span class="star star-f">✦</span>
+          <span class="star star-g">✧</span>
+          <span class="star star-h">✦</span>
+        </div>
+        <div class="wood-floor" aria-hidden="true"></div>
+        <div id="stage-status" class="stage-status">NORMAL</div>
+
+        <div id="char-mute" class="character-layer mute is-listener">
+          <canvas id="char-mute-canvas" class="character-canvas" data-character-canvas="MUTE"></canvas>
+          <div class="character-fallback" aria-hidden="true">M</div>
+          <div class="character-tag">뮤트</div>
+        </div>
+        <div id="char-ed" class="character-layer ed is-listener">
+          <canvas id="char-ed-canvas" class="character-canvas" data-character-canvas="ED"></canvas>
+          <div class="character-fallback" aria-hidden="true">E</div>
+          <div class="character-tag">이드</div>
+        </div>
+
+        <div id="stage-message" class="stage-message" hidden></div>
+      </aside>
+    </section>
 
     <nav class="lecture-nav" aria-label="강의 탐색">
       <button id="prev-lecture" type="button">← Previous lecture</button>
@@ -55,10 +88,11 @@
 
     <footer>
       <span id="status">Nocturne Format 1.0</span>
-      <span>Reader renderer · phase 3</span>
+      <span>Study renderer · design pass 1</span>
     </footer>
   </main>
   <script src="../core.js"></script>
+  <script src="character.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
