@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "categories": [
+    {"slug":"basic-med","ko":"기초의학","en":"Basic Medicine","constellation":"Virgo"},
+    {"slug":"clin-med","ko":"임상의학","en":"Clinical Medicine","constellation":"Pisces"},
+    {"slug":"science","ko":"자연과학","en":"Natural Sciences","constellation":"Capricorn"},
+    {"slug":"math-cs","ko":"수학·전산","en":"Mathematics & Computing","constellation":"Scorpio"},
+    {"slug":"language","ko":"어학·언어","en":"Language & Linguistics","constellation":"Gemini"},
+    {"slug":"history","ko":"역사·지리","en":"History & Geography","constellation":"Taurus"},
+    {"slug":"philosophy","ko":"철학·사상","en":"Philosophy & Thought","constellation":"Aquarius"},
+    {"slug":"religion","ko":"신비·종교","en":"Mysticism & Religion","constellation":"Sagittarius"},
+    {"slug":"law","ko":"법학·제도","en":"Law & Institutions","constellation":"Libra"},
+    {"slug":"pol-econ","ko":"정치·경제","en":"Politics & Economics","constellation":"Leo"},
+    {"slug":"soc-edu","ko":"사회·교육","en":"Society & Education","constellation":"Cancer"},
+    {"slug":"culture","ko":"교양·처세","en":"Culture","constellation":"Aries"}
+  ]
+}

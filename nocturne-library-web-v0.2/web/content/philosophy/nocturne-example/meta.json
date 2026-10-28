@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "id": "nocturne-example",
+  "title": "Nocturne Library 예제 강의",
+  "category": "philosophy",
+  "description": "Nocturne Format 1.0과 1차 웹 Reader를 확인하기 위한 예제 시리즈.",
+  "language": "ko",
+  "status": "ongoing",
+  "lectures": [
+    {"id":"01","file":"01.md","title":"밤의 도서관에 들어가기"},
+    {"id":"02","file":"02.md","title":"의미에 속도를 부여하기"}
+  ]
+}
