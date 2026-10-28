@@ -12,7 +12,7 @@
     prevLecture: $('prev-lecture'), nextLecture: $('next-lecture'), status: $('status')
   };
 
-  const READER_TYPES = new Set(['normal','fast','focus','stop','side']);
+  const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map()
@@ -68,10 +68,10 @@
         }
         current.extras.push(block);
       }
-      // Dialogue remains intentionally deferred to phase 3.
     }
     return slides;
   }
+
 
   function getInteraction(key) { return state.interaction.get(key); }
   function setInteraction(key, value) { state.interaction.set(key, value); }
@@ -129,6 +129,52 @@
     });
     flushCast();
     return chunks.length ? `<div class="interactive-layer">${chunks.join('')}</div>` : '';
+  }
+
+  function dialogueProfileFor(speaker) {
+    const lecture = state.meta?.lectures?.[state.lectureIndex] || {};
+    const profiles = lecture.dialogueSpeakers || state.meta?.dialogueSpeakers || {};
+    const direct = profiles[speaker] || profiles[String(speaker).toUpperCase()] || null;
+    if (!direct) return { name:speaker, thumbnail:'' };
+    if (typeof direct === 'string') return { name:direct, thumbnail:'' };
+    return { name:direct.name || speaker, thumbnail:direct.thumbnail || '' };
+  }
+
+  function dialogueAvatar(speaker) {
+    const profile = dialogueProfileFor(speaker);
+    if (profile.thumbnail) return `<img class="dialogue-avatar-image" src="${esc(profile.thumbnail)}" alt="" loading="lazy">`;
+    const glyph = String(profile.name || speaker || '?').trim().slice(0,1).toUpperCase();
+    return `<span class="dialogue-avatar-fallback">${esc(glyph)}</span>`;
+  }
+
+  function dialogueEntryHtml(entry, speakers, index, activeIndex, transcript) {
+    if (entry.narrator) return `<div class="dialogue-narrator ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}">${inlineMarkdown(entry.content)}</div>`;
+    const order = speakers.indexOf(entry.speaker);
+    const side = order === 1 ? 'right' : order > 1 ? 'minor' : 'left';
+    const profile = dialogueProfileFor(entry.speaker);
+    return `<article class="dialogue-line ${side} ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}" data-speaker="${esc(entry.speaker)}">
+      <div class="dialogue-avatar">${dialogueAvatar(entry.speaker)}</div>
+      <div class="dialogue-bubble"><div class="dialogue-speaker-name">${esc(profile.name)}</div><div class="dialogue-text">${inlineMarkdown(entry.content)}</div></div>
+    </article>`;
+  }
+
+  function dialogueHtml(block, slideIndex) {
+    const entries = block.dialogue?.entries || [];
+    const speakers = block.dialogue?.speakers || [];
+    const modeKey = `s${slideIndex}:dialogue:mode`;
+    const stepKey = `s${slideIndex}:dialogue:step`;
+    const mode = getInteraction(modeKey) || 'flow';
+    let step = Number(getInteraction(stepKey) ?? 0);
+    if (!Number.isInteger(step) || step < 0) step = 0;
+    if (entries.length) step = Math.min(step, entries.length - 1);
+    const transcript = mode === 'transcript';
+    const rail = speakers.length > 2 ? `<div class="dialogue-speaker-rail">${speakers.slice(2).map(sp => { const p=dialogueProfileFor(sp); return `<span class="dialogue-rail-person">${dialogueAvatar(sp)}<span>${esc(p.name)}</span></span>`; }).join('')}</div>` : '';
+    const body = entries.map((entry,i) => dialogueEntryHtml(entry, speakers, i, step, transcript)).join('');
+    const controls = `<div class="dialogue-controls">
+      <div class="dialogue-mode"><button type="button" data-dialogue-action="mode" data-key="${modeKey}" data-value="flow" class="${!transcript ? 'selected' : ''}">Flow</button><button type="button" data-dialogue-action="mode" data-key="${modeKey}" data-value="transcript" class="${transcript ? 'selected' : ''}">Transcript</button></div>
+      ${transcript ? '' : `<div class="dialogue-step"><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="prev" ${step <= 0 ? 'disabled' : ''}>←</button><span>${entries.length ? step+1 : 0} / ${entries.length}</span><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="next" ${step >= entries.length-1 ? 'disabled' : ''}>→</button></div>`}
+    </div>`;
+    return `<div class="dialogue-scene" data-dialogue-mode="${mode}">${rail}<div class="dialogue-stage">${body || '<div class="dialogue-empty">Dialogue is empty.</div>'}</div>${controls}</div>`;
   }
 
   function categoryFor(slug) { return state.categories.find(x => x.slug === slug); }
@@ -220,7 +266,8 @@
     }
     const primary = slide.primary;
     const keyPrefix = `${state.meta.id}:${state.meta.lectures[state.lectureIndex].id}:s${state.sectionIndex}`;
-    ui.reader.innerHTML = `<article class="section" data-type="${esc(primary.type)}">${contentHtml(primary.content, keyPrefix)}${extrasHtml(slide, state.sectionIndex)}</article>`;
+    const primaryHtml = primary.type === 'dialogue' ? dialogueHtml(primary, state.sectionIndex) : contentHtml(primary.content, keyPrefix);
+    ui.reader.innerHTML = `<article class="section" data-type="${esc(primary.type)}">${primaryHtml}${extrasHtml(slide, state.sectionIndex)}</article>`;
     bindInteractiveEvents();
     ui.progress.querySelectorAll('button').forEach((b,i) => b.classList.toggle('active', i === state.sectionIndex));
     ui.progressLabel.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
@@ -247,6 +294,17 @@
       if (action === 'self') setInteraction(`${key}:self`, btn.dataset.value);
       renderSection();
     }));
+    ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const action = btn.dataset.dialogueAction;
+      const key = btn.dataset.key;
+      if (action === 'mode') setInteraction(key, btn.dataset.value);
+      if (action === 'step') {
+        const current = Number(getInteraction(key) ?? 0);
+        setInteraction(key, Math.max(0, current + (btn.dataset.value === 'next' ? 1 : -1)));
+      }
+      renderSection();
+    }));
   }
 
   function renderLectureNav() {
@@ -269,6 +327,14 @@
   ui.seriesSelect.addEventListener('change', () => openSeries(Number(ui.seriesSelect.value), 0));
   document.addEventListener('keydown', e => {
     if (e.target && /INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)) return;
+    const slide = state.slides[state.sectionIndex];
+    if (slide?.primary?.type === 'dialogue' && (getInteraction(`s${state.sectionIndex}:dialogue:mode`) || 'flow') === 'flow') {
+      const key = `s${state.sectionIndex}:dialogue:step`;
+      const entries = slide.primary.dialogue?.entries || [];
+      const step = Number(getInteraction(key) ?? 0);
+      if ((e.key === 'ArrowRight' || e.key === ' ') && step < entries.length - 1) { e.preventDefault(); setInteraction(key, step + 1); renderSection(); return; }
+      if (e.key === 'ArrowLeft' && step > 0) { e.preventDefault(); setInteraction(key, step - 1); renderSection(); return; }
+    }
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (!ui.nextSection.disabled) goSection(state.sectionIndex + 1); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); if (!ui.prevSection.disabled) goSection(state.sectionIndex - 1); }
   });

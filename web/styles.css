@@ -221,3 +221,95 @@ footer { display: flex; justify-content: space-between; gap: 16px; padding-top: 
   .quiz-card { padding: 18px 15px 16px; }
   .recall-self { grid-template-columns: 1fr; }
 }
+
+/* Phase 3 — dialogue */
+.section[data-type="dialogue"] { max-width: 880px; min-height: 390px; }
+.dialogue-scene { display: grid; gap: 18px; }
+.dialogue-stage {
+  position: relative;
+  min-height: 300px;
+  display: grid;
+  align-content: center;
+  gap: 14px;
+  padding: 20px 18px;
+  border: 1px solid rgba(159,147,181,.13);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(94,75,124,.11), transparent 38%),
+    radial-gradient(circle at 82% 70%, rgba(80,92,126,.09), transparent 42%),
+    rgba(18,19,27,.68);
+}
+.dialogue-line {
+  display: grid;
+  grid-template-columns: 48px minmax(0,1fr);
+  gap: 12px;
+  align-items: end;
+  max-width: 78%;
+  animation: dialogue-in .18s ease both;
+}
+.dialogue-line.right { justify-self: end; grid-template-columns: minmax(0,1fr) 48px; }
+.dialogue-line.right .dialogue-avatar { order: 2; }
+.dialogue-line.right .dialogue-bubble { order: 1; text-align: right; }
+.dialogue-line.minor { max-width: 68%; opacity: .92; }
+.dialogue-line.is-hidden, .dialogue-narrator.is-hidden { display: none; }
+@keyframes dialogue-in { from { opacity:0; transform: translateY(4px); } to { opacity:1; transform:none; } }
+.dialogue-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid; place-items: center;
+  border: 1px solid rgba(177,165,197,.18);
+  background: rgba(255,255,255,.035);
+}
+.dialogue-avatar-image { width:100%; height:100%; object-fit:cover; display:block; }
+.dialogue-avatar-fallback { color:#aaa2b7; font:650 12px/1 system-ui,sans-serif; letter-spacing:.04em; }
+.dialogue-bubble {
+  padding: 13px 15px 14px;
+  border-radius: 14px 14px 14px 4px;
+  border: 1px solid rgba(163,151,184,.14);
+  background: linear-gradient(135deg, rgba(41,37,50,.90), rgba(25,25,34,.78));
+}
+.dialogue-line.right .dialogue-bubble { border-radius: 14px 14px 4px 14px; background: linear-gradient(225deg, rgba(42,43,55,.90), rgba(25,25,34,.78)); }
+.dialogue-line.minor .dialogue-bubble { background: rgba(31,31,40,.72); }
+.dialogue-speaker-name { margin-bottom: 5px; color:#9488a7; font:650 9px/1 system-ui,sans-serif; letter-spacing:.13em; text-transform:uppercase; }
+.dialogue-line.right .dialogue-speaker-name { color:#8f9ab0; }
+.dialogue-text { color:#d6d1dc; font-family: Georgia,"Noto Serif KR",serif; font-size:16px; line-height:1.72; }
+.dialogue-narrator {
+  justify-self: center;
+  max-width: 74%;
+  padding: 7px 13px;
+  color:#8f8c99;
+  font-size:13px;
+  line-height:1.65;
+  text-align:center;
+  border-top: 1px solid rgba(157,150,172,.10);
+  border-bottom: 1px solid rgba(157,150,172,.08);
+  animation: dialogue-in .18s ease both;
+}
+.dialogue-controls { display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.dialogue-mode, .dialogue-step { display:flex; gap:6px; align-items:center; }
+.dialogue-controls button {
+  border:1px solid rgba(166,157,184,.14);
+  border-radius:8px;
+  background:rgba(255,255,255,.025);
+  color:#817e8d;
+  padding:7px 10px;
+  cursor:pointer;
+  font:600 10px/1 system-ui,sans-serif;
+  letter-spacing:.05em;
+}
+.dialogue-controls button:hover:not(:disabled), .dialogue-controls button.selected { border-color:rgba(158,140,190,.38); color:#c3b9d2; background:rgba(99,76,126,.12); }
+.dialogue-step span { min-width:44px; text-align:center; color:#6d6b78; font:600 10px/1 system-ui,sans-serif; font-variant-numeric:tabular-nums; }
+.dialogue-speaker-rail { display:flex; gap:8px; flex-wrap:wrap; padding:0 4px; }
+.dialogue-rail-person { display:flex; align-items:center; gap:6px; color:#777482; font:600 9px/1 system-ui,sans-serif; letter-spacing:.05em; }
+.dialogue-rail-person .dialogue-avatar { width:24px; height:24px; }
+.dialogue-rail-person .dialogue-avatar-fallback { font-size:8px; }
+.dialogue-empty { color:#777482; text-align:center; font-size:13px; }
+@media (max-width:760px) {
+  .dialogue-stage { padding:15px 10px; min-height:280px; }
+  .dialogue-line, .dialogue-line.minor { max-width:92%; grid-template-columns:38px minmax(0,1fr); gap:8px; }
+  .dialogue-line.right { grid-template-columns:minmax(0,1fr) 38px; }
+  .dialogue-avatar { width:36px; height:36px; }
+  .dialogue-text { font-size:15px; }
+  .dialogue-narrator { max-width:92%; }
+}
