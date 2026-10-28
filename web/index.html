@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0c13">
+  <title>Nocturne Library</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="topbar">
+      <div class="identity">
+        <div class="brand">NOCTURNE LIBRARY</div>
+        <div class="crumbs"><span id="category-name">Library</span><span class="sep">/</span><span id="series-name">Loading…</span></div>
+      </div>
+      <div class="top-actions">
+        <label class="select-wrap" title="시리즈 선택">
+          <span>Series</span>
+          <select id="series-select" aria-label="시리즈 선택"></select>
+        </label>
+        <label class="select-wrap" title="강의 선택">
+          <span>Lecture</span>
+          <select id="lecture-select" aria-label="강의 선택"></select>
+        </label>
+      </div>
+    </header>
+
+    <section class="lecture-head">
+      <div>
+        <div class="eyebrow" id="lecture-index">Lecture</div>
+        <h1 id="lecture-title">Loading…</h1>
+        <p id="series-description" class="series-description"></p>
+      </div>
+      <div class="progress-box">
+        <div class="progress-meta"><span id="progress-label">0 / 0</span><span id="block-state">NORMAL</span></div>
+        <div id="progress" class="progress" aria-label="강의 진행도"></div>
+      </div>
+    </section>
+
+    <div id="notice" class="notice" hidden></div>
+    <section id="reader" class="reader" aria-live="polite"></section>
+
+    <nav class="section-nav" aria-label="본문 탐색">
+      <button id="prev-section" type="button">← Prev</button>
+      <div class="section-count" id="section-count">0 / 0</div>
+      <button id="next-section" type="button">Next →</button>
+    </nav>
+
+    <nav class="lecture-nav" aria-label="강의 탐색">
+      <button id="prev-lecture" type="button">← Previous lecture</button>
+      <button id="next-lecture" type="button">Next lecture →</button>
+    </nav>
+
+    <footer>
+      <span id="status">Nocturne Format 1.0</span>
+      <span>Reader renderer · phase 1</span>
+    </footer>
+  </main>
+  <script src="../core.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
