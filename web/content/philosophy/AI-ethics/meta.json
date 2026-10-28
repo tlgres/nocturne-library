@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "AI-ethics",
+  "title": "AI 이후의 인간: 창작·학습·노동의 철학",
+  "category": "philosophy",
+  "description": "인간을 특별하게 만들지 않아도 인간을 사랑할 수 있다",
+  "language": "ko",
+  "status": "ongoing",
+  "lectures": [
+    {"id":"01","file":"01.md","title":"인간은 정말 특별한가"},
+    {"id":"02","file":"02.md","title":"창의성이란 무엇인가"},
+    {"id":"03","file":"03.md","title":"이해하지 않고도 창작할 수 있는가"}
+  ]
+}

@@ -1,6 +1,7 @@
 {
   "version": 1,
   "series": [
-    {"path":"content/philosophy/nocturne-example","meta":"content/philosophy/nocturne-example/meta.json"}
+    {"path":"content/philosophy/nocturne-example","meta":"content/philosophy/nocturne-example/meta.json"},
+    {"path":"content/philosophy/AI-ethics","meta":"content/philosophy/AI-ethics/meta.json"}
   ]
 }
