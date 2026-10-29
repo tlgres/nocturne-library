@@ -3,107 +3,98 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#09090e">
-  <title>Nocturne Library</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#0a1220">
+  <title>해체된 의미의 서재</title>
+  <link rel="stylesheet" href="front.css">
 </head>
 <body>
-  <div class="ambient" aria-hidden="true"></div>
-  <main class="shell">
-    <header class="topbar">
-      <div class="identity">
-        <div class="brand">NOCTURNE LIBRARY</div>
-        <div class="crumbs"><span id="category-name">Library</span><span class="sep">/</span><span id="series-name">Loading…</span></div>
-      </div>
-      <div class="top-actions">
-        <label class="select-wrap" title="시리즈 선택">
-          <span>Series</span>
-          <select id="series-select" aria-label="시리즈 선택"></select>
-        </label>
-        <label class="select-wrap" title="강의 선택">
-          <span>Lecture</span>
-          <select id="lecture-select" aria-label="강의 선택"></select>
-        </label>
-        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">Focus</button>
-        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="뮤트·이드와 상호작용 사용">Companions</button>
-        <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
-      </div>
-    </header>
-
-    <section id="reader-settings" class="reader-settings" hidden>
-      <label><span>Font</span><select id="reader-font-select"><option value="serif">Browser Serif</option><option value="sans">Browser Sans</option><option value="system">System UI</option></select></label>
-      <label><span>Size</span><input id="reader-font-size" type="range" min="14" max="21" step="0.5"><output id="reader-font-size-value"></output></label>
-      <label><span>Line</span><input id="reader-line-height" type="range" min="1.5" max="2.1" step="0.05"><output id="reader-line-height-value"></output></label>
-      <button id="reader-settings-reset" type="button">Reset</button>
-    </section>
-
-    <section class="lecture-head">
-      <div class="lecture-copy">
-        <div class="eyebrow" id="lecture-index">Lecture</div>
-        <h1 id="lecture-title">Loading…</h1>
-        <p id="series-description" class="series-description"></p>
-      </div>
-      <div class="progress-box">
-        <div class="progress-meta"><span id="progress-label">0 / 0</span><span id="block-state">NORMAL</span></div>
-        <div id="progress" class="progress" aria-label="강의 진행도"></div>
-      </div>
-    </section>
-
-    <div id="notice" class="notice" hidden></div>
-
-    <section class="study-grid" id="study-grid">
-      <div class="study-column">
-        <section id="reader" class="reader" aria-live="polite"></section>
-        <nav class="section-nav" aria-label="본문 탐색">
-          <button id="prev-section" type="button">← Prev</button>
-          <div class="section-count" id="section-count">0 / 0</div>
-          <button id="next-section" type="button">Next →</button>
-        </nav>
-      </div>
-
-      <aside id="character-stage" class="character-stage" aria-label="Nocturne companion stage" data-block-type="normal">
-        <div class="room-vignette" aria-hidden="true"></div>
-        <div class="night-window" aria-hidden="true">
-          <span class="star star-a">✧</span>
-          <span class="star star-b">✦</span>
-          <span class="star star-c">✧</span>
-          <span class="star star-d">✦</span>
-          <span class="star star-e">✧</span>
-          <span class="star star-f">✦</span>
-          <span class="star star-g">✧</span>
-          <span class="star star-h">✦</span>
-        </div>
-        <div class="wood-floor" aria-hidden="true"></div>
-        <div id="stage-status" class="stage-status">NORMAL</div>
-
-        <div id="char-mute" class="character-layer mute is-listener">
-          <canvas id="char-mute-canvas" class="character-canvas" data-character-canvas="MUTE"></canvas>
-          <div class="character-fallback" aria-hidden="true">M</div>
-          <div class="character-tag">뮤트</div>
-        </div>
-        <div id="char-ed" class="character-layer ed is-listener">
-          <canvas id="char-ed-canvas" class="character-canvas" data-character-canvas="ED"></canvas>
-          <div class="character-fallback" aria-hidden="true">E</div>
-          <div class="character-tag">이드</div>
-        </div>
-
-        <div id="quiz-message" class="quiz-message" hidden></div>
-        <div id="cast-message" class="cast-message cast-message-full" hidden></div>
-      </aside>
-    </section>
-
-    <nav class="lecture-nav" aria-label="강의 탐색">
-      <button id="prev-lecture" type="button">← Previous lecture</button>
-      <button id="next-lecture" type="button">Next lecture →</button>
+  <canvas id="star-canvas" class="star-canvas" aria-hidden="true"></canvas>
+  <div class="cosmic-haze" aria-hidden="true"></div>
+  <header class="front-header">
+    <a class="wordmark" href="index.html"><strong>해체된 의미의 서재</strong></a>
+    <nav class="plain-nav" aria-label="일반 탐색">
+      <button type="button" data-open-panel="search">검색</button>
+      <button type="button" data-open-panel="recent">최근 강의</button>
+      <button type="button" data-open-panel="all">전체 서가</button>
     </nav>
+  </header>
 
-    <footer>
-      <span id="status">Nocturne Format 1.0</span>
-      <span>Study renderer · interaction flow pass</span>
-    </footer>
+  <main class="front-main">
+    <div class="front-layout">
+    <section class="zodiac-zone" aria-labelledby="category-title">
+      <div class="ring-viewport" id="ring-viewport"><div class="orbit-line" aria-hidden="true"></div>
+        <button class="ring-arrow ring-arrow-left" id="ring-prev" type="button" aria-label="이전 카테고리">‹</button>
+        <div class="ring-scene" id="ring-scene" tabindex="0" aria-label="12개 카테고리 회전 선택">
+          <div class="ring" id="ring"></div>
+        </div>
+        <button class="ring-arrow ring-arrow-right" id="ring-next" type="button" aria-label="다음 카테고리">›</button>
+      </div>
+      <div class="ring-dots" id="ring-dots" aria-label="카테고리 빠른 이동"></div>
+
+      <section class="category-focus" id="category-focus">
+        <div class="constellation-line"><span id="category-symbol">✦</span></div>
+        <h1 id="category-title">철학·사상</h1>
+        <p class="category-en" id="category-en">Philosophy & Thought</p>
+        <p class="category-description" id="category-description"></p>
+        <div class="category-stats" id="category-stats"></div>
+        <div class="focus-actions">
+          <a id="enter-shelf" class="primary-link" href="shelf.html">서가로 들어가기 <span>→</span></a>
+        </div>
+      </section>
+
+      <section class="recent-category" aria-labelledby="recent-category-title">
+        <div class="section-heading">
+          <div><span class="micro">최근 등록</span><h2 id="recent-category-title">최근 시리즈</h2></div>
+          <a id="all-in-shelf" href="shelf.html">서가 전체 보기</a>
+        </div>
+        <div class="series-row" id="category-series"></div>
+      </section>
+    </section>
+
+    <aside class="portal-rail" aria-label="다른 공간">
+      <button class="portal-tile portal-moon" type="button" data-open-portal="about">
+        <span class="celestial-object moon-object" aria-hidden="true"></span>
+        <span class="portal-copy"><strong>관측소</strong><em>이 웹과 저자</em></span>
+      </button>
+      <button class="portal-tile portal-comet" type="button" data-open-portal="diary">
+        <span class="celestial-object comet-object" aria-hidden="true"></span>
+        <span class="portal-copy"><strong>유성 기록</strong><em>일기와 잡담</em></span>
+      </button>
+      <button class="portal-tile portal-planet" type="button" data-open-portal="journal">
+        <span class="celestial-object planet-object" aria-hidden="true"></span>
+        <span class="portal-copy"><strong>궤도 문헌실</strong><em>논문과 저널</em></span>
+      </button>
+    </aside>
+    </div>
   </main>
-  <script src="../core.js"></script>
-  <script src="character.js"></script>
-  <script src="app.js"></script>
+
+  <aside id="nav-panel" class="nav-panel" hidden>
+    <div class="nav-panel-backdrop" data-close-panel></div>
+    <section class="nav-panel-card" role="dialog" aria-modal="true" aria-labelledby="nav-panel-title">
+      <header><div><span class="micro" id="nav-panel-kicker">서재</span><h2 id="nav-panel-title">탐색</h2></div><button type="button" data-close-panel aria-label="닫기">×</button></header>
+      <div id="panel-search" class="panel-view" hidden>
+        <label class="search-box"><span>검색</span><input id="library-search" type="search" placeholder="시리즈·강의·카테고리 검색"></label>
+        <div id="search-results" class="panel-results"></div>
+      </div>
+      <div id="panel-recent" class="panel-view" hidden><div id="recent-results" class="panel-results"></div></div>
+      <div id="panel-all" class="panel-view" hidden><div id="all-categories" class="category-grid"></div></div>
+    </section>
+  </aside>
+
+
+  <aside id="portal-panel" class="portal-panel" hidden>
+    <div class="portal-panel-backdrop" data-close-portal></div>
+    <section class="portal-panel-card" role="dialog" aria-modal="true" aria-labelledby="portal-panel-title">
+      <button class="portal-close" type="button" data-close-portal aria-label="닫기">×</button>
+      <div id="portal-panel-symbol" class="portal-panel-symbol">◐</div>
+      <div id="portal-panel-label" class="micro">관측소</div>
+      <h2 id="portal-panel-title">관측소</h2>
+      <div id="portal-panel-content" class="portal-panel-content"></div>
+      <a id="portal-panel-more" class="primary-link" href="auxiliary.html?view=about">별도 페이지로 열기 <span>→</span></a>
+    </section>
+  </aside>
+
+  <footer class="front-footer"><span>해체된 의미의 서재</span><span>Nocturne Format 1.0</span></footer>
+  <script src="front.js"></script>
 </body>
 </html>

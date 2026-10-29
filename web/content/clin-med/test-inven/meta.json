@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "test-inven",
+  "title": "검사와 시술의 임상의학",
+  "category": "clin-med",
+  "description": "환자 앞에서 정보가 한 조각씩 공개될 때, 어떤 다음 행동을 선택하겠는가?",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-10-29",
+  "updatedAt": "2026-10-29",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 검사를 주문하기 전에 — 사전확률, 민감도, 특이도와 Bayes의 임상적 사용"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 숫자는 사진이 아니라 영화다 — Serial test와 변화량 읽기"
+    }
+  ]
+}

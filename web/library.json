@@ -1,7 +1,21 @@
 {
   "version": 1,
   "series": [
-    {"path":"content/philosophy/nocturne-example","meta":"content/philosophy/nocturne-example/meta.json"},
-    {"path":"content/philosophy/AI-ethics","meta":"content/philosophy/AI-ethics/meta.json"}
+    {
+      "path": "content/philosophy/nocturne-example",
+      "meta": "content/philosophy/nocturne-example/meta.json"
+    },
+    {
+      "path": "content/philosophy/AI-ethics",
+      "meta": "content/philosophy/AI-ethics/meta.json"
+    },
+    {
+      "path": "content/clin-med/test-inven",
+      "meta": "content/clin-med/test-inven/meta.json"
+    },
+    {
+      "path": "content/math-cs/wrong-integration",
+      "meta": "content/math-cs/wrong-integration/meta.json"
+    }
   ]
 }

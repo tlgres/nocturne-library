@@ -5,7 +5,7 @@
 
   const $ = id => document.getElementById(id);
   const ui = {
-    categoryName: $('category-name'), seriesName: $('series-name'), seriesSelect: $('series-select'), lectureSelect: $('lecture-select'),
+    categoryName: $('category-name'), seriesName: $('series-name'), categorySelect: $('category-select'), seriesSelect: $('series-select'), lectureSelect: $('lecture-select'),
     lectureIndex: $('lecture-index'), lectureTitle: $('lecture-title'), seriesDescription: $('series-description'),
     progress: $('progress'), progressLabel: $('progress-label'), blockState: $('block-state'), notice: $('notice'), reader: $('reader'),
     prevSection: $('prev-section'), nextSection: $('next-section'), sectionCount: $('section-count'),
@@ -73,6 +73,24 @@
     s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
     s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
     return s;
+  }
+
+  function renderMath(root) {
+    if (!root || typeof globalThis.renderMathInElement !== 'function') return;
+    try {
+      globalThis.renderMathInElement(root, {
+        delimiters: [
+          {left:'\\[', right:'\\]', display:true},
+          {left:'$$', right:'$$', display:true},
+          {left:'\\(', right:'\\)', display:false},
+        ],
+        throwOnError: false,
+        strict: false,
+        ignoredTags: ['script','noscript','style','textarea','pre','code']
+      });
+    } catch (error) {
+      console.warn('Math rendering failed:', error);
+    }
   }
 
   function inlineWithCloze(text, keyPrefix) {
@@ -179,11 +197,18 @@
   }
 
   function resolveSeriesAsset(path) {
-    const value = String(path || '').trim();
+    const value = String(path || '').trim().replace(/\\/g, '/');
     if (!value) return '';
-    if (/^(?:https?:|data:|blob:|\/)/i.test(value)) return value;
-    if (value.startsWith('content/')) return value;
-    return `${state.seriesPath}/${value}`.replace(/\/{2,}/g, '/');
+    try {
+      if (/^(?:https?:|data:|blob:)/i.test(value)) return value;
+      if (value.startsWith('/')) return new URL(value, location.origin).href;
+      const webBase = new URL('./', location.href);
+      if (value.startsWith('content/')) return new URL(value, webBase).href;
+      const seriesBase = new URL(`${state.seriesPath.replace(/\/$/, '')}/`, webBase);
+      return new URL(value, seriesBase).href;
+    } catch {
+      return value;
+    }
   }
 
   function dialogueProfileFor(speaker) {
@@ -197,9 +222,18 @@
 
   function dialogueAvatar(speaker) {
     const profile = dialogueProfileFor(speaker);
-    if (profile.thumbnail) return `<img class="dialogue-avatar-image" src="${esc(profile.thumbnail)}" alt="" loading="lazy">`;
     const glyph = String(profile.name || speaker || '?').trim().slice(0,1).toUpperCase();
+    if (profile.thumbnail) return `<img class="dialogue-avatar-image" src="${esc(profile.thumbnail)}" alt="" loading="lazy"><span class="dialogue-avatar-fallback avatar-fallback-hidden">${esc(glyph)}</span>`;
     return `<span class="dialogue-avatar-fallback">${esc(glyph)}</span>`;
+  }
+
+  function bindDialogueAvatarFallbacks() {
+    ui.reader?.querySelectorAll('.dialogue-avatar-image').forEach(img => {
+      const fallback = img.nextElementSibling;
+      const fail = () => { img.hidden = true; fallback?.classList.remove('avatar-fallback-hidden'); };
+      img.addEventListener('error', fail, {once:true});
+      if (img.complete && img.naturalWidth === 0) fail();
+    });
   }
 
   function dialogueEntryHtml(entry, speakers, index, activeIndex, transcript) {
@@ -358,12 +392,26 @@
   async function fetchJson(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.json(); }
   async function fetchText(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.text(); }
 
+  function seriesIndicesForCategory(slug) {
+    return state.seriesList.map((series, index) => ({series, index})).filter(x => x.series.data.category === slug);
+  }
+
+  function populateSeriesSelect(categorySlug, selectedGlobalIndex = null) {
+    const matches = seriesIndicesForCategory(categorySlug);
+    ui.seriesSelect.innerHTML = matches.map(({series,index}) => `<option value="${index}">${esc(series.data.title)}</option>`).join('');
+    ui.seriesSelect.disabled = matches.length === 0;
+    if (selectedGlobalIndex != null && matches.some(x => x.index === selectedGlobalIndex)) ui.seriesSelect.value = String(selectedGlobalIndex);
+    else if (matches.length) ui.seriesSelect.value = String(matches[0].index);
+    return matches;
+  }
+
   async function loadBootData() {
     const [cats, library] = await Promise.all([fetchJson('categories.json'), fetchJson('library.json')]);
     state.categories = cats.categories || [];
     state.catalog = library.series || [];
     state.seriesList = await Promise.all(state.catalog.map(async item => ({...item, data: await fetchJson(item.meta)})));
-    ui.seriesSelect.innerHTML = state.seriesList.map((s,i) => `<option value="${i}">${esc(s.data.title)}</option>`).join('');
+    const populated = new Set(state.seriesList.map(x => x.data.category));
+    ui.categorySelect.innerHTML = state.categories.filter(cat => populated.has(cat.slug)).map(cat => `<option value="${esc(cat.slug)}">${esc(cat.ko)}</option>`).join('');
   }
 
   function routeSelection() {
@@ -393,7 +441,8 @@
     state.seriesPath = selected.path;
     state.meta = selected.data;
     state.lectureIndex = Math.min(Math.max(lectureIdx,0), state.meta.lectures.length - 1);
-    ui.seriesSelect.value = String(seriesIdx);
+    if (ui.categorySelect) ui.categorySelect.value = state.meta.category;
+    populateSeriesSelect(state.meta.category, seriesIdx);
     ui.lectureSelect.innerHTML = state.meta.lectures.map((x,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} · ${esc(x.title || x.id)}</option>`).join('');
     ui.seriesName.textContent = state.meta.title;
     ui.seriesDescription.textContent = state.meta.description || '';
@@ -440,6 +489,8 @@
     const keyPrefix = `${state.meta.id}:${state.meta.lectures[state.lectureIndex].id}:s${state.sectionIndex}`;
     const primaryHtml = primary.type === 'dialogue' ? dialogueHtml(primary, state.sectionIndex) : contentHtml(primary.content, keyPrefix);
     ui.reader.innerHTML = `<article class="section" data-type="${esc(primary.type)}">${primaryHtml}</article>`;
+    renderMath(ui.reader);
+    bindDialogueAvatarFallbacks();
     renderStage(slide);
     bindInteractiveEvents();
     ui.progress.querySelectorAll('button').forEach((b,i) => b.classList.toggle('active', i === state.sectionIndex));
@@ -450,16 +501,27 @@
     ui.blockState.textContent = primary.type.toUpperCase();
     ui.sectionCount.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
     const castState = state.prefs.companions === false ? {items:[], index:-1} : currentCastFor(slide);
-    ui.prevSection.disabled = state.sectionIndex <= 0 && castState.index < 0;
-    ui.nextSection.disabled = state.sectionIndex >= state.slides.length - 1 && !(castState.items.length && castState.index < castState.items.length - 1);
+    const atFirstSection = state.sectionIndex <= 0 && castState.index < 0;
+    const atLastSection = state.sectionIndex >= state.slides.length - 1;
+    const castRemaining = castState.items.length && castState.index < castState.items.length - 1;
+    const hasPrevLecture = state.lectureIndex > 0;
+    const hasNextLecture = state.lectureIndex < state.meta.lectures.length - 1;
+    ui.prevSection.disabled = atFirstSection && !hasPrevLecture;
+    ui.nextSection.disabled = atLastSection && !castRemaining && !hasNextLecture;
+    ui.prevSection.textContent = atFirstSection && hasPrevLecture ? '← Previous lecture' : '← Prev';
+    ui.nextSection.textContent = atLastSection && !castRemaining && hasNextLecture ? 'Next lecture →' : atLastSection && !castRemaining ? 'Series complete' : 'Next →';
     savePosition();
   }
 
   function bindStageEvents() {
+    renderMath(ui.quizMessage);
+    renderMath(ui.castMessage);
     const roots = [ui.quizMessage, ui.castMessage].filter(Boolean);
     const all = selector => roots.flatMap(root => [...root.querySelectorAll(selector)]);
     all('[data-quiz-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
+      const readerTop = ui.reader?.scrollTop || 0;
+      const quizTop = ui.quizMessage?.scrollTop || 0;
       const action = btn.dataset.quizAction;
       const key = btn.dataset.key;
       if (action === 'answer') setInteraction(`${key}:result`, btn.dataset.value);
@@ -467,6 +529,10 @@
       if (action === 'self') setInteraction(`${key}:self`, btn.dataset.value);
       renderStage(state.slides[state.sectionIndex]);
       bindStageEvents();
+      requestAnimationFrame(() => {
+        if (ui.reader) ui.reader.scrollTop = readerTop;
+        if (ui.quizMessage) ui.quizMessage.scrollTop = quizTop;
+      });
     }));
     all('[data-cast-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -522,7 +588,8 @@
       const cast = currentCastFor(slide);
       if (cast.items.length && cast.index < cast.items.length - 1) { stepCast(1); return; }
     }
-    goSection(state.sectionIndex + 1);
+    if (state.sectionIndex < state.slides.length - 1) { goSection(state.sectionIndex + 1); return; }
+    if (state.lectureIndex < state.meta.lectures.length - 1) openLecture(state.lectureIndex + 1);
   }
 
   function prevReaderStep() {
@@ -531,7 +598,10 @@
       const cast = currentCastFor(slide);
       if (cast.items.length && cast.index >= 0) { stepCast(-1); return; }
     }
-    goSection(state.sectionIndex - 1);
+    if (state.sectionIndex > 0) { goSection(state.sectionIndex - 1); return; }
+    if (state.lectureIndex > 0) {
+      openLecture(state.lectureIndex - 1).then(() => goSection(Math.max(0, state.slides.length - 1)));
+    }
   }
 
   function renderLectureNav() {
@@ -552,6 +622,10 @@
   ui.nextLecture.addEventListener('click', () => openLecture(state.lectureIndex + 1));
   ui.lectureSelect.addEventListener('change', () => openLecture(Number(ui.lectureSelect.value)));
   ui.seriesSelect.addEventListener('change', () => openSeries(Number(ui.seriesSelect.value), 0));
+  ui.categorySelect?.addEventListener('change', () => {
+    const matches = populateSeriesSelect(ui.categorySelect.value);
+    if (matches.length) openSeries(matches[0].index, 0);
+  });
 
   ui.immersiveToggle?.addEventListener('click', () => updatePrefs({immersive: !state.prefs.immersive}));
   ui.companionToggle?.addEventListener('click', () => { updatePrefs({companions: state.prefs.companions === false}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });

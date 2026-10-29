@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "id": "wrong-integration",
+  "title": "뭔가 잘못된 적분",
+  "category": "math-cs",
+  "description": "괴상한 적분을 보고 어떤 무기를 꺼낼지 판단하는 패턴 인식 강의",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-10-29",
+  "updatedAt": "2026-10-29",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 왜 적분을 하고 있는가? — 적분하지 않고 적분하기"
+    }
+  ]
+}

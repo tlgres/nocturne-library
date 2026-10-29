@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#070914">
+  <title>서가 · 해체된 의미의 서재</title><link rel="stylesheet" href="shelf.css">
+</head>
+<body>
+  <div class="shelf-stars" aria-hidden="true"></div>
+  <header class="shelf-header"><a href="index.html" class="back">◁ Home</a><nav><a href="index.html">홈</a><button id="shelf-search-open" type="button">검색</button></nav></header>
+  <main class="shelf-shell">
+    <section class="shelf-hero"><div class="shelf-constellation" id="shelf-constellation">Aquarius</div><h1 id="shelf-title">철학·사상</h1><p id="shelf-en"></p><p id="shelf-description"></p><div id="shelf-stats" class="shelf-stats"></div></section>
+    <section class="series-shelf"><div class="shelf-section-head"><span>SERIES</span><div id="category-switcher" class="category-switcher"></div></div><div id="series-list" class="series-list"></div></section>
+  </main>
+  <aside id="shelf-search" class="shelf-search" hidden><div class="shelf-search-backdrop" data-close></div><section><header><strong>Search this shelf</strong><button data-close type="button">×</button></header><input id="shelf-search-input" type="search" placeholder="시리즈 또는 강의 제목"><div id="shelf-search-results"></div></section></aside>
+  <script src="shelf.js"></script>
+</body></html>

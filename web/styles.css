@@ -18,7 +18,7 @@
   --violet-glow: rgba(138, 91, 181, .12);
   --blue: #8193ad;
   --blue-soft: rgba(93, 124, 161, .12);
-  --reader-font: serif;
+  --reader-font: sans-serif;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--bg-0);
   color: var(--text);
@@ -1574,3 +1574,30 @@ body.companions-off #companion-toggle {
   .dialogue-avatar-wrap { width: 38px; }
   .dialogue-avatar-name { width: 52px; font-size: 7px; }
 }
+
+/* v0.9 polish: dialogue copy is always left-aligned, even for the right speaker. */
+.dialogue-line.right .dialogue-bubble,
+.dialogue-line.right .dialogue-text {
+  text-align: left !important;
+}
+.avatar-fallback-hidden { display: none !important; }
+
+/* Keep the quiz reaction visually anchored on Ed. */
+.character-stage.has-quiz .character-layer.ed.is-active-speaker { z-index: 8; opacity: 1; }
+.character-stage.has-quiz .character-layer.mute.is-listener { z-index: 4; }
+
+/* v0.12 minor polish */
+a.home-link,.home-link,a[data-home],.toolbar a[href*="index.html"]{text-decoration:none!important}
+
+
+/* v0.13 study navigation + math polish */
+.library-home-link,
+.library-home-link:link,
+.library-home-link:visited,
+.library-home-link:hover,
+.library-home-link:active { text-decoration:none !important; }
+.category-select-wrap select { min-width: 108px; }
+.katex-display { margin: .9em 0 1.05em; overflow-x:auto; overflow-y:hidden; padding:.12em 0; }
+.section-body .katex { font-size:1.04em; }
+.section-body p:has(.katex-display) { margin-block:.6em; }
+@media (max-width: 1100px) { .category-select-wrap { display:none; } }

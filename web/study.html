@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#09090e">
+  <title>Study · 해체된 의미의 서재</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+  <main class="shell">
+    <header class="topbar">
+      <div class="identity">
+        <div class="brand">해체된 의미의 서재</div>
+        <div class="crumbs"><span id="category-name">서재</span><span class="sep">/</span><span id="series-name">Loading…</span></div>
+      </div>
+      <div class="top-actions">
+        <a class="chrome-button library-home-link" href="index.html" title="홈으로 돌아가기">◁ Home</a>
+        <label class="select-wrap category-select-wrap" title="카테고리 선택">
+          <span>분류</span>
+          <select id="category-select" aria-label="카테고리 선택"></select>
+        </label>
+        <label class="select-wrap" title="시리즈 선택">
+          <span>시리즈</span>
+          <select id="series-select" aria-label="시리즈 선택"></select>
+        </label>
+        <label class="select-wrap" title="강의 선택">
+          <span>강의</span>
+          <select id="lecture-select" aria-label="강의 선택"></select>
+        </label>
+        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">집중</button>
+        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="뮤트·이드와 상호작용 사용">동반자</button>
+        <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
+      </div>
+    </header>
+
+    <section id="reader-settings" class="reader-settings" hidden>
+      <label><span>Font</span><select id="reader-font-select"><option value="serif">Browser Serif</option><option value="sans">Browser Sans</option><option value="system">System UI</option></select></label>
+      <label><span>Size</span><input id="reader-font-size" type="range" min="14" max="21" step="0.5"><output id="reader-font-size-value"></output></label>
+      <label><span>Line</span><input id="reader-line-height" type="range" min="1.5" max="2.1" step="0.05"><output id="reader-line-height-value"></output></label>
+      <button id="reader-settings-reset" type="button">Reset</button>
+    </section>
+
+    <section class="lecture-head">
+      <div class="lecture-copy">
+        <div class="eyebrow" id="lecture-index">Lecture</div>
+        <h1 id="lecture-title">Loading…</h1>
+        <p id="series-description" class="series-description"></p>
+      </div>
+      <div class="progress-box">
+        <div class="progress-meta"><span id="progress-label">0 / 0</span><span id="block-state">NORMAL</span></div>
+        <div id="progress" class="progress" aria-label="강의 진행도"></div>
+      </div>
+    </section>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <section class="study-grid" id="study-grid">
+      <div class="study-column">
+        <section id="reader" class="reader" aria-live="polite"></section>
+        <nav class="section-nav" aria-label="본문 탐색">
+          <button id="prev-section" type="button">← Prev</button>
+          <div class="section-count" id="section-count">0 / 0</div>
+          <button id="next-section" type="button">Next →</button>
+        </nav>
+      </div>
+
+      <aside id="character-stage" class="character-stage" aria-label="Nocturne companion stage" data-block-type="normal">
+        <div class="room-vignette" aria-hidden="true"></div>
+        <div class="night-window" aria-hidden="true">
+          <span class="star star-a">✧</span>
+          <span class="star star-b">✦</span>
+          <span class="star star-c">✧</span>
+          <span class="star star-d">✦</span>
+          <span class="star star-e">✧</span>
+          <span class="star star-f">✦</span>
+          <span class="star star-g">✧</span>
+          <span class="star star-h">✦</span>
+        </div>
+        <div class="wood-floor" aria-hidden="true"></div>
+        <div id="stage-status" class="stage-status">NORMAL</div>
+
+        <div id="char-mute" class="character-layer mute is-listener">
+          <canvas id="char-mute-canvas" class="character-canvas" data-character-canvas="MUTE"></canvas>
+          <div class="character-fallback" aria-hidden="true">M</div>
+          <div class="character-tag">뮤트</div>
+        </div>
+        <div id="char-ed" class="character-layer ed is-listener">
+          <canvas id="char-ed-canvas" class="character-canvas" data-character-canvas="ED"></canvas>
+          <div class="character-fallback" aria-hidden="true">E</div>
+          <div class="character-tag">이드</div>
+        </div>
+
+        <div id="quiz-message" class="quiz-message" hidden></div>
+        <div id="cast-message" class="cast-message cast-message-full" hidden></div>
+      </aside>
+    </section>
+
+    <nav class="lecture-nav" aria-label="강의 탐색">
+      <button id="prev-lecture" type="button">← 이전 강의</button>
+      <button id="next-lecture" type="button">다음 강의 →</button>
+    </nav>
+
+    <footer>
+      <span id="status">Nocturne Format 1.0</span>
+      <span>해체된 의미의 서재 · Study View</span>
+    </footer>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script src="../core.js"></script>
+  <script src="character.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
