@@ -10,15 +10,59 @@
     progress: $('progress'), progressLabel: $('progress-label'), blockState: $('block-state'), notice: $('notice'), reader: $('reader'),
     prevSection: $('prev-section'), nextSection: $('next-section'), sectionCount: $('section-count'),
     prevLecture: $('prev-lecture'), nextLecture: $('next-lecture'), status: $('status'),
-    stage: $('character-stage'), stageStatus: $('stage-status'), stageMessage: $('stage-message'),
-    muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas')
+    stage: $('character-stage'), stageStatus: $('stage-status'), quizMessage: $('quiz-message'),
+    castMessage: $('cast-message'),
+    muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas'),
+    immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
+    fontSelect: $('reader-font-select'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
+    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), settingsReset: $('reader-settings-reset')
   };
 
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
+  const PREF_KEY = 'nocturne:webprefs:v1';
+  const DIALOGUE_MODE_KEY = 'nocturne:dialogue-mode:v1';
+  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, companions:true };
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
-    doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'}
+    doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
+    prefs: {...DEFAULT_PREFS}
   };
+
+  function loadPrefs() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+      state.prefs = {...DEFAULT_PREFS, ...saved};
+    } catch { state.prefs = {...DEFAULT_PREFS}; }
+  }
+  function savePrefs() { localStorage.setItem(PREF_KEY, JSON.stringify(state.prefs)); }
+  function applyPrefs() {
+    const font = state.prefs.font === 'sans' ? 'sans-serif' : state.prefs.font === 'system' ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' : 'serif';
+    document.documentElement.style.setProperty('--reader-font', font);
+    document.documentElement.style.setProperty('--reader-size', `${state.prefs.fontSize}px`);
+    document.documentElement.style.setProperty('--reader-leading', String(state.prefs.lineHeight));
+    document.body.classList.toggle('immersive', !!state.prefs.immersive);
+    document.body.classList.toggle('companions-off', state.prefs.companions === false);
+    if (ui.fontSelect) ui.fontSelect.value = state.prefs.font;
+    if (ui.fontSize) ui.fontSize.value = String(state.prefs.fontSize);
+    if (ui.fontSizeValue) ui.fontSizeValue.value = `${state.prefs.fontSize}px`;
+    if (ui.lineHeight) ui.lineHeight.value = String(state.prefs.lineHeight);
+    if (ui.lineHeightValue) ui.lineHeightValue.value = Number(state.prefs.lineHeight).toFixed(2);
+    if (ui.immersiveToggle) {
+      ui.immersiveToggle.setAttribute('aria-pressed', state.prefs.immersive ? 'true' : 'false');
+      ui.immersiveToggle.classList.toggle('active', !!state.prefs.immersive);
+      ui.immersiveToggle.textContent = state.prefs.immersive ? 'Exit Focus' : 'Focus';
+    }
+    if (ui.companionToggle) {
+      const on = state.prefs.companions !== false;
+      ui.companionToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+      ui.companionToggle.classList.toggle('active', on);
+      ui.companionToggle.textContent = on ? 'Companions' : 'Quiet';
+      ui.companionToggle.title = on ? '뮤트·이드와 상호작용 사용' : '조용히 읽기 · CAST/QUIZ 생략';
+    }
+  }
+  function updatePrefs(patch) { state.prefs = {...state.prefs, ...patch}; savePrefs(); applyPrefs(); }
+
+  loadPrefs();
 
   const esc = value => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
 
@@ -134,13 +178,21 @@
     return chunks.length ? `<div class="interactive-layer">${chunks.join('')}</div>` : '';
   }
 
+  function resolveSeriesAsset(path) {
+    const value = String(path || '').trim();
+    if (!value) return '';
+    if (/^(?:https?:|data:|blob:|\/)/i.test(value)) return value;
+    if (value.startsWith('content/')) return value;
+    return `${state.seriesPath}/${value}`.replace(/\/{2,}/g, '/');
+  }
+
   function dialogueProfileFor(speaker) {
     const lecture = state.meta?.lectures?.[state.lectureIndex] || {};
     const profiles = lecture.dialogueSpeakers || state.meta?.dialogueSpeakers || {};
     const direct = profiles[speaker] || profiles[String(speaker).toUpperCase()] || null;
     if (!direct) return { name:speaker, thumbnail:'' };
     if (typeof direct === 'string') return { name:direct, thumbnail:'' };
-    return { name:direct.name || speaker, thumbnail:direct.thumbnail || '' };
+    return { name:direct.name || speaker, thumbnail:resolveSeriesAsset(direct.thumbnail || '') };
   }
 
   function dialogueAvatar(speaker) {
@@ -156,8 +208,8 @@
     const side = order === 1 ? 'right' : order > 1 ? 'minor' : 'left';
     const profile = dialogueProfileFor(entry.speaker);
     return `<article class="dialogue-line ${side} ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}" data-speaker="${esc(entry.speaker)}">
-      <div class="dialogue-avatar">${dialogueAvatar(entry.speaker)}</div>
-      <div class="dialogue-bubble"><div class="dialogue-speaker-name">${esc(profile.name)}</div><div class="dialogue-text">${inlineMarkdown(entry.content)}</div></div>
+      <div class="dialogue-avatar-wrap"><div class="dialogue-avatar">${dialogueAvatar(entry.speaker)}</div><div class="dialogue-avatar-name">${esc(profile.name)}</div></div>
+      <div class="dialogue-bubble"><div class="dialogue-text">${inlineMarkdown(entry.content)}</div></div>
     </article>`;
   }
 
@@ -166,7 +218,7 @@
     const speakers = block.dialogue?.speakers || [];
     const modeKey = `s${slideIndex}:dialogue:mode`;
     const stepKey = `s${slideIndex}:dialogue:step`;
-    const mode = getInteraction(modeKey) || 'flow';
+    const mode = getInteraction(modeKey) || localStorage.getItem(DIALOGUE_MODE_KEY) || 'flow';
     let step = Number(getInteraction(stepKey) ?? 0);
     if (!Number.isInteger(step) || step < 0) step = 0;
     if (entries.length) step = Math.min(step, entries.length - 1);
@@ -187,56 +239,102 @@
     state.animators.ED = new Animator(ui.edCanvas, 'ED');
   }
 
-  function stageMotionFor(slide) {
-    const castItems = slide.extras.filter(x => x.type === 'cast');
+  function quizReactionFor(slide) {
     const quizItems = slide.extras.filter(x => x.type === 'quiz');
-    if (quizItems.length) {
-      const quizIndex = slide.extras.indexOf(quizItems[0]);
-      const base = `s${state.sectionIndex}:q${quizIndex}`;
-      const answered = getInteraction(`${base}:result`) || getInteraction(`${base}:revealed`);
-      return answered
-        ? {active:'MUTE', MUTE:'explain', ED:'normal'}
-        : {active:'ED', MUTE:'normal', ED:'curious'};
+    if (!quizItems.length) return null;
+    const quiz = quizItems[0];
+    const quizIndex = slide.extras.indexOf(quiz);
+    const base = `s${state.sectionIndex}:q${quizIndex}`;
+    if (quiz.quiz.kind === 'recall') {
+      const self = getInteraction(`${base}:self`);
+      const revealed = !!getInteraction(`${base}:revealed`);
+      if (self === 'known') return {active:'ED', MUTE:'normal', ED:'smug'};
+      if (self === 'maybe') return {active:'ED', MUTE:'normal', ED:'skeptical'};
+      if (self === 'missed') return {active:'ED', MUTE:'normal', ED:'surprised'};
+      if (revealed) return {active:'ED', MUTE:'normal', ED:'ask'};
+      return {active:'ED', MUTE:'normal', ED:'curious'};
     }
-    if (castItems.length) {
-      const last = castItems[castItems.length - 1];
-      const active = last.speaker === 'MUTE' || last.speaker === 'ED' ? last.speaker : '';
-      return {active, MUTE: active === 'MUTE' ? (last.expression || 'normal') : 'normal', ED: active === 'ED' ? (last.expression || 'normal') : 'normal'};
+    const result = getInteraction(`${base}:result`);
+    if (!result) return {active:'ED', MUTE:'normal', ED:'curious'};
+    return result === quiz.quiz.answer
+      ? {active:'ED', MUTE:'normal', ED:'smug'}
+      : {active:'ED', MUTE:'normal', ED:'surprised'};
+  }
+
+  function castItemsFor(slide) {
+    return slide.extras.filter(x => x.type === 'cast' && (x.speaker === 'MUTE' || x.speaker === 'ED'));
+  }
+
+  function currentCastFor(slide) {
+    const items = castItemsFor(slide);
+    if (!items.length) return {items, index:-1, item:null, key:`s${state.sectionIndex}:cast:step`};
+    const key = `s${state.sectionIndex}:cast:step`;
+    let index = Number(getInteraction(key) ?? -1);
+    if (!Number.isInteger(index)) index = -1;
+    index = Math.max(-1, Math.min(index, items.length - 1));
+    return {items, index, item:index >= 0 ? items[index] : null, key};
+  }
+
+  function stageMotionFor(slide) {
+    if (state.prefs.companions === false) return {active:'', MUTE:'normal', ED:'normal'};
+    const castState = currentCastFor(slide);
+    const cast = castState.item;
+    if (cast) {
+      const active = cast.speaker;
+      return {active, MUTE: active === 'MUTE' ? (cast.expression || 'normal') : 'normal', ED: active === 'ED' ? (cast.expression || 'normal') : 'normal'};
     }
+    const quiz = quizReactionFor(slide);
+    if (quiz) return quiz;
     return {active:'', MUTE:'normal', ED:'normal'};
   }
 
-  function stageExtrasHtml(slide, slideIndex) {
-    if (!slide.extras.length) return '';
-    const chunks = [];
-    let castBuffer = [];
-    const flushCast = () => {
-      if (!castBuffer.length) return;
-      chunks.push(castHtml(castBuffer));
-      castBuffer = [];
-    };
-    slide.extras.forEach((block, i) => {
-      if (block.type === 'cast') castBuffer.push(block);
-      else if (block.type === 'quiz') { flushCast(); chunks.push(quizHtml(block, slideIndex, i)); }
-    });
-    flushCast();
-    return chunks.join('');
+  function castSequenceHtml(slide) {
+    const current = currentCastFor(slide);
+    if (!current.item) return '';
+    const item = current.item;
+    const label = item.speaker === 'MUTE' ? '뮤트' : '이드';
+    const prevDisabled = current.index <= 0 ? 'disabled' : '';
+    const nextDisabled = current.index >= current.items.length - 1 ? 'disabled' : '';
+    const controls = current.items.length > 1 ? `<div class="cast-sequence-controls"><button type="button" data-cast-action="step" data-key="${current.key}" data-value="prev" ${prevDisabled}>←</button><span>${current.index + 1} / ${current.items.length}</span><button type="button" data-cast-action="step" data-key="${current.key}" data-value="next" ${nextDisabled}>→</button></div>` : '';
+    return `<div class="cast-bubble cast-bubble-full" data-speaker="${esc(item.speaker)}"><div class="cast-bubble-head"><span class="cast-bubble-speaker">${esc(label)}</span>${controls}</div><div class="cast-bubble-line">${inlineMarkdown(item.content)}</div></div>`;
+  }
+
+  function quizStackHtml(slide, slideIndex) {
+    return slide.extras.map((block, i) => block.type === 'quiz' ? quizHtml(block, slideIndex, i) : '').filter(Boolean).join('');
   }
 
   function renderStage(slide) {
     if (!ui.stage) return;
     const primaryType = slide?.primary?.type || 'normal';
     const extras = slide?.extras || [];
-    const hasQuiz = extras.some(x => x.type === 'quiz');
-    const hasCast = extras.some(x => x.type === 'cast');
+    const companionsOn = state.prefs.companions !== false;
+    if (!companionsOn) {
+      if (ui.quizMessage) { ui.quizMessage.innerHTML = ''; ui.quizMessage.hidden = true; }
+      if (ui.castMessage) { ui.castMessage.innerHTML = ''; ui.castMessage.hidden = true; }
+      state.animators.MUTE?.stop();
+      state.animators.ED?.stop();
+      return;
+    }
+    const castState = currentCastFor(slide);
+    const castVisible = !!castState.item;
+    const hasQuiz = !castVisible && extras.some(x => x.type === 'quiz');
+    const hasCast = castVisible;
     ui.stage.dataset.blockType = hasQuiz ? 'quiz' : hasCast ? 'cast' : primaryType;
     ui.stage.classList.toggle('is-dialogue-observer', primaryType === 'dialogue');
     ui.stage.classList.toggle('has-quiz', hasQuiz);
+    ui.stage.classList.toggle('has-cast', hasCast);
     ui.stageStatus.textContent = (hasQuiz ? 'QUIZ' : hasCast ? 'CAST' : primaryType).toUpperCase();
 
-    const message = stageExtrasHtml(slide, state.sectionIndex);
-    ui.stageMessage.innerHTML = message;
-    ui.stageMessage.hidden = !message;
+    const quizMarkup = hasQuiz ? quizStackHtml(slide, state.sectionIndex) : '';
+    if (ui.quizMessage) {
+      ui.quizMessage.innerHTML = quizMarkup;
+      ui.quizMessage.hidden = !quizMarkup;
+    }
+    const castMarkup = hasCast ? castSequenceHtml(slide) : '';
+    if (ui.castMessage) {
+      ui.castMessage.innerHTML = castMarkup;
+      ui.castMessage.hidden = !castMarkup;
+    }
 
     const motion = stageMotionFor(slide);
     ui.muteLayer.classList.toggle('is-active-speaker', motion.active === 'MUTE');
@@ -351,20 +449,15 @@
     ui.progressLabel.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
     ui.blockState.textContent = primary.type.toUpperCase();
     ui.sectionCount.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
-    ui.prevSection.disabled = state.sectionIndex <= 0;
-    ui.nextSection.disabled = state.sectionIndex >= state.slides.length - 1;
+    const castState = state.prefs.companions === false ? {items:[], index:-1} : currentCastFor(slide);
+    ui.prevSection.disabled = state.sectionIndex <= 0 && castState.index < 0;
+    ui.nextSection.disabled = state.sectionIndex >= state.slides.length - 1 && !(castState.items.length && castState.index < castState.items.length - 1);
     savePosition();
   }
 
-  function bindInteractiveEvents() {
-    const roots = [ui.reader, ui.stageMessage].filter(Boolean);
+  function bindStageEvents() {
+    const roots = [ui.quizMessage, ui.castMessage].filter(Boolean);
     const all = selector => roots.flatMap(root => [...root.querySelectorAll(selector)]);
-    all('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const key = btn.dataset.clozeKey;
-      setInteraction(key, !getInteraction(key));
-      renderSection();
-    }));
     all('[data-quiz-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const action = btn.dataset.quizAction;
@@ -372,19 +465,73 @@
       if (action === 'answer') setInteraction(`${key}:result`, btn.dataset.value);
       if (action === 'reveal') setInteraction(`${key}:revealed`, true);
       if (action === 'self') setInteraction(`${key}:self`, btn.dataset.value);
+      renderStage(state.slides[state.sectionIndex]);
+      bindStageEvents();
+    }));
+    all('[data-cast-action]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.key;
+      const current = Number(getInteraction(key) ?? 0);
+      setInteraction(key, Math.max(0, current + (btn.dataset.value === 'next' ? 1 : -1)));
+      renderStage(state.slides[state.sectionIndex]);
+      bindStageEvents();
+    }));
+  }
+
+  function bindInteractiveEvents() {
+    ui.reader.querySelectorAll('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.clozeKey;
+      setInteraction(key, !getInteraction(key));
       renderSection();
     }));
-    all('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
+    ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const action = btn.dataset.dialogueAction;
       const key = btn.dataset.key;
-      if (action === 'mode') setInteraction(key, btn.dataset.value);
+      if (action === 'mode') {
+        setInteraction(key, btn.dataset.value);
+        localStorage.setItem(DIALOGUE_MODE_KEY, btn.dataset.value);
+      }
       if (action === 'step') {
         const current = Number(getInteraction(key) ?? 0);
         setInteraction(key, Math.max(0, current + (btn.dataset.value === 'next' ? 1 : -1)));
       }
       renderSection();
     }));
+    bindStageEvents();
+  }
+
+  function stepCast(delta) {
+    if (state.prefs.companions === false) return false;
+    const slide = state.slides[state.sectionIndex];
+    if (!slide) return false;
+    const cast = currentCastFor(slide);
+    if (!cast.items.length) return false;
+    const next = Math.max(-1, Math.min(cast.items.length - 1, cast.index + delta));
+    if (next === cast.index) return false;
+    setInteraction(cast.key, next);
+    renderStage(slide);
+    bindStageEvents();
+    return true;
+  }
+
+  function nextReaderStep() {
+    const slide = state.slides[state.sectionIndex];
+    if (state.prefs.companions !== false && slide) {
+      const cast = currentCastFor(slide);
+      if (cast.items.length && cast.index < cast.items.length - 1) { stepCast(1); return; }
+    }
+    goSection(state.sectionIndex + 1);
+  }
+
+  function prevReaderStep() {
+    const slide = state.slides[state.sectionIndex];
+    if (state.prefs.companions !== false && slide) {
+      const cast = currentCastFor(slide);
+      if (cast.items.length && cast.index >= 0) { stepCast(-1); return; }
+    }
+    goSection(state.sectionIndex - 1);
   }
 
   function renderLectureNav() {
@@ -396,27 +543,48 @@
     if (!Number.isInteger(index) || index < 0 || index >= state.slides.length) return;
     state.sectionIndex = index;
     renderSection();
-    window.scrollTo({top: Math.max(0, ui.reader.offsetTop - 120), behavior:'smooth'});
+    ui.reader?.scrollTo({top:0, behavior:'smooth'});
   }
 
-  ui.prevSection.addEventListener('click', () => goSection(state.sectionIndex - 1));
-  ui.nextSection.addEventListener('click', () => goSection(state.sectionIndex + 1));
+  ui.prevSection.addEventListener('click', prevReaderStep);
+  ui.nextSection.addEventListener('click', nextReaderStep);
   ui.prevLecture.addEventListener('click', () => openLecture(state.lectureIndex - 1));
   ui.nextLecture.addEventListener('click', () => openLecture(state.lectureIndex + 1));
   ui.lectureSelect.addEventListener('change', () => openLecture(Number(ui.lectureSelect.value)));
   ui.seriesSelect.addEventListener('change', () => openSeries(Number(ui.seriesSelect.value), 0));
+
+  ui.immersiveToggle?.addEventListener('click', () => updatePrefs({immersive: !state.prefs.immersive}));
+  ui.companionToggle?.addEventListener('click', () => { updatePrefs({companions: state.prefs.companions === false}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });
+  ui.settingsToggle?.addEventListener('click', () => {
+    const nextHidden = !ui.settingsPanel.hidden;
+    ui.settingsPanel.hidden = nextHidden;
+    ui.settingsToggle.setAttribute('aria-expanded', nextHidden ? 'false' : 'true');
+  });
+  ui.fontSelect?.addEventListener('change', () => updatePrefs({font: ui.fontSelect.value}));
+  ui.fontSize?.addEventListener('input', () => updatePrefs({fontSize: Number(ui.fontSize.value)}));
+  ui.lineHeight?.addEventListener('input', () => updatePrefs({lineHeight: Number(ui.lineHeight.value)}));
+  ui.settingsReset?.addEventListener('click', () => { state.prefs = {...DEFAULT_PREFS}; savePrefs(); applyPrefs(); });
+  document.addEventListener('pointerdown', e => {
+    if (!ui.settingsPanel || ui.settingsPanel.hidden) return;
+    if (ui.settingsPanel.contains(e.target) || ui.settingsToggle?.contains(e.target)) return;
+    ui.settingsPanel.hidden = true;
+    ui.settingsToggle?.setAttribute('aria-expanded','false');
+  });
+
+  applyPrefs();
+
   document.addEventListener('keydown', e => {
     if (e.target && /INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)) return;
     const slide = state.slides[state.sectionIndex];
-    if (slide?.primary?.type === 'dialogue' && (getInteraction(`s${state.sectionIndex}:dialogue:mode`) || 'flow') === 'flow') {
+    if (slide?.primary?.type === 'dialogue' && (getInteraction(`s${state.sectionIndex}:dialogue:mode`) || localStorage.getItem(DIALOGUE_MODE_KEY) || 'flow') === 'flow') {
       const key = `s${state.sectionIndex}:dialogue:step`;
       const entries = slide.primary.dialogue?.entries || [];
       const step = Number(getInteraction(key) ?? 0);
       if ((e.key === 'ArrowRight' || e.key === ' ') && step < entries.length - 1) { e.preventDefault(); setInteraction(key, step + 1); renderSection(); return; }
       if (e.key === 'ArrowLeft' && step > 0) { e.preventDefault(); setInteraction(key, step - 1); renderSection(); return; }
     }
-    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (!ui.nextSection.disabled) goSection(state.sectionIndex + 1); }
-    if (e.key === 'ArrowLeft') { e.preventDefault(); if (!ui.prevSection.disabled) goSection(state.sectionIndex - 1); }
+    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (!ui.nextSection.disabled || currentCastFor(slide || {extras:[]}).items.length) nextReaderStep(); }
+    if (e.key === 'ArrowLeft') { e.preventDefault(); if (!ui.prevSection.disabled || currentCastFor(slide || {extras:[]}).index >= 0) prevReaderStep(); }
   });
 
   document.addEventListener('visibilitychange', () => {

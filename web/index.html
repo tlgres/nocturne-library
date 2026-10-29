@@ -24,11 +24,21 @@
           <span>Lecture</span>
           <select id="lecture-select" aria-label="강의 선택"></select>
         </label>
+        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">Focus</button>
+        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="뮤트·이드와 상호작용 사용">Companions</button>
+        <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
       </div>
     </header>
 
+    <section id="reader-settings" class="reader-settings" hidden>
+      <label><span>Font</span><select id="reader-font-select"><option value="serif">Browser Serif</option><option value="sans">Browser Sans</option><option value="system">System UI</option></select></label>
+      <label><span>Size</span><input id="reader-font-size" type="range" min="14" max="21" step="0.5"><output id="reader-font-size-value"></output></label>
+      <label><span>Line</span><input id="reader-line-height" type="range" min="1.5" max="2.1" step="0.05"><output id="reader-line-height-value"></output></label>
+      <button id="reader-settings-reset" type="button">Reset</button>
+    </section>
+
     <section class="lecture-head">
-      <div>
+      <div class="lecture-copy">
         <div class="eyebrow" id="lecture-index">Lecture</div>
         <h1 id="lecture-title">Loading…</h1>
         <p id="series-description" class="series-description"></p>
@@ -77,7 +87,8 @@
           <div class="character-tag">이드</div>
         </div>
 
-        <div id="stage-message" class="stage-message" hidden></div>
+        <div id="quiz-message" class="quiz-message" hidden></div>
+        <div id="cast-message" class="cast-message cast-message-full" hidden></div>
       </aside>
     </section>
 
@@ -88,7 +99,7 @@
 
     <footer>
       <span id="status">Nocturne Format 1.0</span>
-      <span>Study renderer · design pass 1</span>
+      <span>Study renderer · interaction flow pass</span>
     </footer>
   </main>
   <script src="../core.js"></script>
