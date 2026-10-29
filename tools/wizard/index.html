@@ -32,7 +32,7 @@
       <div class="editor-toolbar">
         <div class="field compact"><label>카테고리</label><select id="categorySelect"></select></div>
         <div class="field series-field"><label>시리즈</label><select id="seriesSelect"></select></div>
-        <button id="newLectureBtn" class="ghost">＋ 새 강의</button>
+        <button id="editSeriesBtn" class="ghost">책 정보</button><button id="newLectureBtn" class="ghost">＋ 새 강의</button>
       </div>
 
       <div id="modeBanner" class="mode-banner">새 강의</div>
@@ -45,7 +45,7 @@
 
       <div class="paste-head">
         <div><span class="eyebrow">SOURCE</span><h2>Nocturne 강의</h2></div>
-        <div class="source-actions"><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
+        <div class="source-actions"><button id="replaceToolBtn" class="ghost">문자열 정리</button><button id="stripBoldBtn" class="ghost">** 제거</button><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
       </div>
       <textarea id="sourceInput" spellcheck="false" placeholder="# 강의 제목\n\n[[NORMAL]]\n...\n[[END]]"></textarea>
 
@@ -85,10 +85,35 @@
     </form>
   </dialog>
 
+
+  <dialog id="seriesEditDialog">
+    <form method="dialog" id="seriesEditForm" class="dialog-form">
+      <div class="section-head"><div><span class="eyebrow">BOOK METADATA</span><h2>책 정보</h2></div><button value="cancel" class="icon-btn">×</button></div>
+      <div class="field"><label>제목</label><input id="editSeriesTitle" required></div>
+      <div class="field"><label>짧은 설명</label><textarea id="editSeriesDescription" rows="3"></textarea></div>
+      <div class="field"><label>프롤로그 <span id="prologueCount" class="muted">0 / 500</span></label><textarea id="editSeriesPrologue" rows="7" maxlength="500" placeholder="선택 사항 · 500자 이하"></textarea></div>
+      <div class="cover-editor">
+        <div id="coverPreview" class="cover-preview"><span>표지 없음</span></div>
+        <div class="cover-actions"><div id="coverPath" class="muted">이미지 없음 · 제목형 표지를 사용합니다.</div><button id="pickCoverBtn" type="button" class="ghost">표지 이미지 선택</button><button id="clearCoverBtn" type="button" class="ghost danger">표지 제거</button></div>
+      </div>
+      <div class="dialog-actions"><button value="cancel" class="ghost">취소</button><button id="saveSeriesMetaBtn" value="default" class="primary">책 정보 저장</button></div>
+    </form>
+  </dialog>
+
   <script src="../../web/core.js"></script>
   <script src="repository.js"></script>
   <script src="validator.js"></script>
   <script src="preview.js"></script>
   <script src="wizard.js"></script>
+
+  <dialog id="replaceDialog">
+    <form method="dialog" class="dialog-form" id="replaceForm">
+      <div><span class="eyebrow">TEXT CLEANUP</span><h2>문자열 일괄 바꾸기</h2></div>
+      <label class="field"><span>찾을 문자열</span><input id="replaceFind" autocomplete="off" placeholder="예: **"></label>
+      <label class="field"><span>바꿀 문자열</span><input id="replaceWith" autocomplete="off" placeholder="비워두면 삭제"></label>
+      <div id="replaceCount" class="muted">0개 발견</div>
+      <div class="dialog-actions"><button value="cancel" class="ghost">취소</button><button id="replaceAllBtn" type="button" class="primary">모두 바꾸기</button></div>
+    </form>
+  </dialog>
 </body>
 </html>

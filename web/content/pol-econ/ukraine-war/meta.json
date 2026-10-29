@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "ukraine-war",
+  "title": "우크라이나 전쟁 이후 현대전의 양상",
+  "category": "pol-econ",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-10-29",
+  "updatedAt": "2026-10-29",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 전쟁이 돌아왔다 — 우리가 준비한 전쟁과 실제로 온 전쟁"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 투명해진 전장 — 숨는 것이 다시 가장 어려운 기술이 되다"
+    }
+  ]
+}

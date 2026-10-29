@@ -68,6 +68,10 @@
 
   function inlineMarkdown(text) {
     let s = esc(text);
+    // Basic Markdown links. Only http/https targets are linkified; everything else stays text.
+    s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/gi, (_m, label, href) => {
+      return `<a class="md-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+    });
     s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
@@ -466,7 +470,7 @@
     if (ui.categorySelect) ui.categorySelect.value = state.meta.category;
     populateSeriesSelect(state.meta.category, seriesIdx);
     ui.lectureSelect.innerHTML = state.meta.lectures.map((x,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} · ${esc(x.title || x.id)}</option>`).join('');
-    ui.seriesName.textContent = state.meta.title;
+    ui.seriesName.textContent = state.meta.title; ui.seriesName.dataset.seriesId = state.meta.id; ui.seriesName.href = `book.html?series=${encodeURIComponent(state.meta.id)}`;
     ui.seriesDescription.textContent = state.meta.description || '';
     const cat = categoryFor(state.meta.category);
     ui.categoryName.textContent = cat ? cat.ko : state.meta.category;
@@ -477,6 +481,7 @@
     state.lectureIndex = Math.min(Math.max(index,0), state.meta.lectures.length - 1);
     state.interaction.clear();
     const lecture = state.meta.lectures[state.lectureIndex];
+    localStorage.setItem(`deconstructed:lastlecture:v1:${state.meta.id}`, lecture.id);
     ui.lectureSelect.value = String(state.lectureIndex);
     ui.status.textContent = 'Loading…';
     const source = await fetchText(`${state.seriesPath}/${lecture.file}`);

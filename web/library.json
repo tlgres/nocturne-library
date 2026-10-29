@@ -16,6 +16,14 @@
     {
       "path": "content/math-cs/wrong-integration",
       "meta": "content/math-cs/wrong-integration/meta.json"
+    },
+    {
+      "path": "content/basic-med/pharmacognosy-easy",
+      "meta": "content/basic-med/pharmacognosy-easy/meta.json"
+    },
+    {
+      "path": "content/pol-econ/ukraine-war",
+      "meta": "content/pol-econ/ukraine-war/meta.json"
     }
   ]
 }

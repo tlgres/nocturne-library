@@ -1,9 +1,9 @@
 (() => {
   const repo = new WizardRepository.Repository();
   const $ = id => document.getElementById(id);
-  const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false };
+  const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','createSeriesBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripBoldBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -28,15 +28,34 @@
     if (!repo.root) return;
     const groups = repo.categories.map(cat => {
       const series = repo.series.filter(s => s.meta?.category === cat.slug);
-      if (!series.length) return `<div class="tree-category empty-cat"><button data-cat="${cat.slug}"><span>${esc(cat.ko)}</span><small>0</small></button></div>`;
-      return `<div class="tree-category"><button data-cat="${cat.slug}"><span>${esc(cat.ko)}</span><small>${series.length}</small></button>${series.map(s => `<div class="tree-series"><button data-series="${esc(s.meta.id)}">${esc(s.meta.title)}</button><div class="tree-lectures">${(s.meta.lectures||[]).map(l => `<button data-series="${esc(s.meta.id)}" data-lecture="${esc(l.id)}"><span>${esc(l.id)}</span>${esc(l.title)}</button>`).join('')}</div></div>`).join('')}</div>`;
+      const catOpen = state.expandedCats.has(cat.slug);
+      const catHead = `<button class="tree-toggle" data-cat="${cat.slug}"><span class="tree-chevron">${catOpen ? '▾' : '▸'}</span><span>${esc(cat.ko)}</span><small>${series.length}</small></button>`;
+      if (!series.length) return `<div class="tree-category empty-cat">${catHead}</div>`;
+      const seriesHtml = catOpen ? series.map(item => {
+        const seriesOpen = state.expandedSeries.has(item.meta.id);
+        const lectures = seriesOpen ? `<div class="tree-lectures">${(item.meta.lectures||[]).map(l => `<button data-series="${esc(item.meta.id)}" data-lecture="${esc(l.id)}"><span>${esc(l.id)}</span>${esc(l.title)}</button>`).join('')}</div>` : '';
+        return `<div class="tree-series"><button data-series="${esc(item.meta.id)}"><span class="tree-chevron">${seriesOpen ? '▾' : '▸'}</span>${esc(item.meta.title)}</button>${lectures}</div>`;
+      }).join('') : '';
+      return `<div class="tree-category ${catOpen ? 'open' : ''}">${catHead}${seriesHtml}</div>`;
     }).join('');
     el.libraryTree.innerHTML = groups;
     el.libraryTree.querySelectorAll('[data-cat]').forEach(btn => btn.addEventListener('click', () => {
-      el.categorySelect.value = btn.dataset.cat; populateSeriesSelect(); if (state.series) beginNewLecture(false);
+      const cat = btn.dataset.cat;
+      if (state.expandedCats.has(cat)) state.expandedCats.delete(cat); else state.expandedCats.add(cat);
+      el.categorySelect.value = cat; populateSeriesSelect();
+      renderTree();
     }));
-    el.libraryTree.querySelectorAll('[data-series]:not([data-lecture])').forEach(btn => btn.addEventListener('click', () => selectSeries(btn.dataset.series)));
-    el.libraryTree.querySelectorAll('[data-lecture]').forEach(btn => btn.addEventListener('click', () => loadExistingLecture(btn.dataset.series, btn.dataset.lecture)));
+    el.libraryTree.querySelectorAll('[data-series]:not([data-lecture])').forEach(btn => btn.addEventListener('click', () => {
+      const id = btn.dataset.series; const series = repo.getSeriesById(id);
+      if (series) state.expandedCats.add(series.meta.category);
+      if (state.expandedSeries.has(id)) state.expandedSeries.delete(id); else state.expandedSeries.add(id);
+      selectSeries(id); renderTree();
+    }));
+    el.libraryTree.querySelectorAll('[data-lecture]').forEach(btn => btn.addEventListener('click', () => {
+      const series = repo.getSeriesById(btn.dataset.series);
+      if (series) { state.expandedCats.add(series.meta.category); state.expandedSeries.add(series.meta.id); }
+      loadExistingLecture(btn.dataset.series, btn.dataset.lecture);
+    }));
   }
 
   function selectSeries(id) {
@@ -65,6 +84,7 @@
     el.categorySelect.value = series.meta.category; populateSeriesSelect(seriesId); state.series = series;
     const text = await repo.loadLecture(series, lecture);
     state.existingLecture = { ...lecture };
+    state.expandedCats.add(series.meta.category); state.expandedSeries.add(series.meta.id); renderTree();
     el.modeBanner.textContent = `기존 강의 수정 · ${lecture.id}`; el.modeBanner.dataset.mode = 'edit';
     el.lectureTitle.value = lecture.title || '';
     el.lectureId.value = lecture.id; el.lectureFile.value = lecture.file;
@@ -168,18 +188,74 @@
     } catch (err) { setMessage(err.message, 'error'); }
   }
 
+
+  function renderCoverPreview(series, pendingFile = null) {
+    const meta = series?.meta || {};
+    el.coverPreview.innerHTML = '';
+    if (pendingFile) {
+      const img = document.createElement('img'); img.alt = '선택한 표지'; img.src = URL.createObjectURL(pendingFile); el.coverPreview.appendChild(img);
+      el.coverPath.textContent = pendingFile.name;
+    } else if (meta.cover && !state.coverCleared) {
+      el.coverPreview.innerHTML = `<div class="cover-existing"><strong>${esc(meta.title)}</strong><small>${esc(meta.cover)}</small></div>`;
+      el.coverPath.textContent = meta.cover;
+    } else {
+      el.coverPreview.innerHTML = `<div class="cover-existing"><strong>${esc(meta.title || '제목형 표지')}</strong><small>typographic cover</small></div>`;
+      el.coverPath.textContent = '이미지 없음 · 제목형 표지를 사용합니다.';
+    }
+  }
+
+  function openSeriesEditor() {
+    if (!state.series) return setMessage('시리즈를 먼저 선택하세요.', 'error');
+    state.pendingCoverFile = null; state.coverCleared = false;
+    el.editSeriesTitle.value = state.series.meta.title || '';
+    el.editSeriesDescription.value = state.series.meta.description || '';
+    el.editSeriesPrologue.value = state.series.meta.prologue || '';
+    el.prologueCount.textContent = `${el.editSeriesPrologue.value.length} / 500`;
+    renderCoverPreview(state.series);
+    el.seriesEditDialog.showModal();
+  }
+
+  async function saveSeriesMetadata(event) {
+    event.preventDefault();
+    try {
+      let cover;
+      if (state.pendingCoverFile) cover = await repo.saveCoverAsset(state.series, state.pendingCoverFile);
+      else if (state.coverCleared) cover = null;
+      else cover = state.series.meta.cover || '';
+      const updated = await repo.updateSeriesMetadata(state.series, { title:el.editSeriesTitle.value, description:el.editSeriesDescription.value, prologue:el.editSeriesPrologue.value, cover });
+      state.series = updated;
+      el.seriesEditDialog.close();
+      renderTree(); populateSeriesSelect(updated.meta.id);
+      setMessage('책 정보와 표지를 저장했습니다.', 'ok');
+    } catch (err) { setMessage(err.message, 'error'); }
+  }
+
   function wire() {
     el.chooseRepoBtn.addEventListener('click', () => connect('choose'));
     el.reconnectBtn.addEventListener('click', () => connect('reconnect'));
     el.categorySelect.addEventListener('change', () => { populateSeriesSelect(); beginNewLecture(true); });
     el.seriesSelect.addEventListener('change', () => { state.series = repo.getSeriesById(el.seriesSelect.value); beginNewLecture(true); });
+    el.editSeriesBtn.addEventListener('click', openSeriesEditor);
     el.newLectureBtn.addEventListener('click', () => beginNewLecture(true));
     el.newSeriesBtn.addEventListener('click', () => { if (!repo.root) return setMessage('먼저 Repository를 선택하세요.', 'error'); el.newSeriesCategory.value = el.categorySelect.value || repo.categories[0]?.slug; el.seriesDialog.showModal(); });
     el.createSeriesBtn.addEventListener('click', createSeries);
     el.analyzeBtn.addEventListener('click', analyze);
     el.clearBtn.addEventListener('click', () => { if (el.sourceInput.value && !confirm('붙여넣은 강의를 비울까요?')) return; el.sourceInput.value=''; el.lectureTitle.value=''; analyze(); });
+    el.stripBoldBtn.addEventListener('click', () => {
+      const count = (el.sourceInput.value.match(/\*\*/g) || []).length;
+      if (!count) return setMessage('** 문자열이 없습니다.');
+      el.sourceInput.value = el.sourceInput.value.split('**').join(''); analyze(); setMessage(`** ${count}개 제거`, 'ok');
+    });
+    const updateReplaceCount = () => { const f=el.replaceFind.value; const n=f ? el.sourceInput.value.split(f).length-1 : 0; el.replaceCount.textContent=`${n}개 발견`; };
+    el.replaceToolBtn.addEventListener('click', () => { el.replaceFind.value=''; el.replaceWith.value=''; updateReplaceCount(); el.replaceDialog.showModal(); setTimeout(()=>el.replaceFind.focus(),0); });
+    el.replaceFind.addEventListener('input', updateReplaceCount);
+    el.replaceAllBtn.addEventListener('click', () => { const f=el.replaceFind.value; if(!f) return; const n=el.sourceInput.value.split(f).length-1; if(!n) return updateReplaceCount(); el.sourceInput.value=el.sourceInput.value.split(f).join(el.replaceWith.value); el.replaceDialog.close(); analyze(); setMessage(`${n}개 문자열 변경 완료`, 'ok'); });
     let timer; el.sourceInput.addEventListener('input', () => { clearTimeout(timer); timer=setTimeout(analyze,220); });
     [el.lectureId, el.lectureFile].forEach(x => x.addEventListener('input', analyze));
+    el.pickCoverBtn.addEventListener('click', async () => { try { const [handle] = await showOpenFilePicker({multiple:false,types:[{description:'Cover image',accept:{'image/*':['.png','.jpg','.jpeg','.webp']}}]}); state.pendingCoverFile = await handle.getFile(); state.coverCleared = false; renderCoverPreview(state.series, state.pendingCoverFile); } catch(err) { if(err.name !== 'AbortError') setMessage(err.message,'error'); } });
+    el.clearCoverBtn.addEventListener('click', () => { state.pendingCoverFile = null; state.coverCleared = true; renderCoverPreview(state.series); });
+    el.editSeriesPrologue.addEventListener('input', () => el.prologueCount.textContent = `${el.editSeriesPrologue.value.length} / 500`);
+    el.saveSeriesMetaBtn.addEventListener('click', saveSeriesMetadata);
     el.saveBtn.addEventListener('click', save);
   }
 

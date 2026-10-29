@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#08111d">
+  <title>책 · 해체된 의미의 서재</title>
+  <link rel="stylesheet" href="book.css">
+  <link rel="icon" type="image/png" href="assets/nata.png">
+</head>
+<body>
+  <div class="book-stars" aria-hidden="true"></div>
+  <header class="book-header">
+    <a id="back-shelf" href="index.html">◁ 서가</a>
+    <a href="index.html" class="home-link">해체된 의미의 서재</a>
+  </header>
+  <main class="book-shell">
+    <section class="book-hero">
+      <div id="cover" class="cover" aria-label="책 표지"></div>
+      <div class="book-copy">
+        <div id="category-name" class="eyebrow">서가</div>
+        <h1 id="book-title">Loading…</h1>
+        <p id="book-description" class="description"></p>
+        <div id="book-meta" class="book-meta"></div>
+        <div id="prologue-wrap" class="prologue-wrap" hidden>
+          <div class="prologue-rule"></div>
+          <p id="book-prologue" class="prologue"></p>
+        </div>
+        <div class="book-actions">
+          <a id="start-reading" class="primary" href="#">처음부터 읽기 →</a>
+          <a id="continue-reading" class="secondary" href="#" hidden>이어서 읽기</a>
+        </div>
+      </div>
+    </section>
+    <section class="toc-section">
+      <div class="toc-head"><span>CONTENTS</span><h2>목차</h2></div>
+      <div id="lecture-list" class="lecture-list"></div>
+    </section>
+  </main>
+  <script src="book.js"></script>
+</body>
+</html>

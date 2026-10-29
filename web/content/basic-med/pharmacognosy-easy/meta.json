@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "pharmacognosy-easy",
+  "title": "의학도를 위한 교양 생약학",
+  "category": "basic-med",
+  "description": "인간은 생약을 어떻게 발견했고, 무엇을 약효라고 오해하거나 제대로 알아보았으며, 그것이 어떻게 현대 약물이 되었는가?",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-10-29",
+  "updatedAt": "2026-10-29",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 독과 약 사이 — 벨라돈나, 독말풀, 그리고 atropine"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 잠의 신에게서 진통제로 — 아편, morphine, 그리고 opioid"
+    }
+  ]
+}

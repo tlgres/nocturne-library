@@ -252,3 +252,5 @@ body{
   .ring-viewport{height:270px!important;}
   .orbit-line{top:64%!important;}
 }
+\n/* v0.15: give the category node a little more clearance above the position indicator. */
+.ring-dots{transform:translateY(10px)!important}.category-focus{margin-top:8px!important}\n

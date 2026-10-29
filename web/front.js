@@ -103,7 +103,7 @@
   function seriesCard(s) {
     const cat=state.categories.find(c=>c.slug===s.data.category);
     const count=s.data.lectures?.length||0;
-    return `<a class="series-card" href="shelf.html?category=${encodeURIComponent(s.data.category)}&series=${encodeURIComponent(s.data.id)}">
+    return `<a class="series-card" href="book.html?series=${encodeURIComponent(s.data.id)}">
       <small>${count}강</small><div><strong>${esc(s.data.title)}</strong><p>${esc(s.data.description||'')}</p></div></a>`;
   }
 
@@ -154,7 +154,7 @@
       return;
     }
     const rows=state.series.filter(s => (s.data.kind||s.data.section)===view);
-    ui.portalContent.innerHTML=rows.length?rows.slice(0,6).map(s=>`<a class="portal-series" href="shelf.html?category=${encodeURIComponent(s.data.category)}&series=${encodeURIComponent(s.data.id)}"><strong>${esc(s.data.title)}</strong><span>${esc(s.data.description||'')}</span></a>`).join(''):`<div class="empty-series">아직 공개된 ${view==='diary'?'기록':'문헌 노트'}가 없습니다.</div>`;
+    ui.portalContent.innerHTML=rows.length?rows.slice(0,6).map(s=>`<a class="portal-series" href="book.html?series=${encodeURIComponent(s.data.id)}"><strong>${esc(s.data.title)}</strong><span>${esc(s.data.description||'')}</span></a>`).join(''):`<div class="empty-series">아직 공개된 ${view==='diary'?'기록':'문헌 노트'}가 없습니다.</div>`;
   }
   function closePortal(){ if(ui.portal) ui.portal.hidden=true; }
 
@@ -168,13 +168,13 @@
       (s.data.lectures||[]).forEach((lec,i)=>{ if(String(lec.title||'').toLowerCase().includes(q)) results.push({type:'lecture',s,cat,lec,i}); });
     });
     ui.searchResults.innerHTML=results.slice(0,30).map(r=> r.type==='series'
-      ? `<a class="result-row" href="shelf.html?category=${encodeURIComponent(r.s.data.category)}&series=${encodeURIComponent(r.s.data.id)}"><small>${esc(r.cat?.ko||'')}</small><strong>${esc(r.s.data.title)}</strong><span>시리즈 →</span></a>`
+      ? `<a class="result-row" href="book.html?series=${encodeURIComponent(r.s.data.id)}"><small>${esc(r.cat?.ko||'')}</small><strong>${esc(r.s.data.title)}</strong><span>시리즈 →</span></a>`
       : `<a class="result-row" href="study.html?series=${encodeURIComponent(r.s.data.id)}&lecture=${encodeURIComponent(r.lec.id)}"><small>${esc(r.s.data.title)}</small><strong>${esc(r.lec.title||r.lec.id)}</strong><span>강의 →</span></a>`).join('') || '<div class="empty-series">검색 결과가 없습니다.</div>';
   }
 
   function renderRecentPanel() {
     const recent=sortedRecent(state.series).slice(0,12);
-    ui.recentResults.innerHTML=recent.map(s=>{const c=state.categories.find(x=>x.slug===s.data.category);return `<a class="result-row" href="shelf.html?category=${encodeURIComponent(s.data.category)}&series=${encodeURIComponent(s.data.id)}"><small>${esc(c?.ko||'')}</small><strong>${esc(s.data.title)}</strong><span>${s.data.lectures?.length||0}강</span></a>`}).join('') || '<div class="empty-series">아직 등록된 시리즈가 없습니다.</div>';
+    ui.recentResults.innerHTML=recent.map(s=>{const c=state.categories.find(x=>x.slug===s.data.category);return `<a class="result-row" href="book.html?series=${encodeURIComponent(s.data.id)}"><small>${esc(c?.ko||'')}</small><strong>${esc(s.data.title)}</strong><span>${s.data.lectures?.length||0}강</span></a>`}).join('') || '<div class="empty-series">아직 등록된 시리즈가 없습니다.</div>';
   }
   function renderAllCategories() {
     ui.allCategories.innerHTML=state.categories.map((c,i)=>`<a class="category-mini" href="shelf.html?category=${encodeURIComponent(c.slug)}"><small>${String(i+1).padStart(2,'0')}</small><strong>${esc(c.ko)}</strong></a>`).join('');

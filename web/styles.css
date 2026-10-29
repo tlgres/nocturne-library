@@ -1614,3 +1614,7 @@ a.home-link,.home-link,a[data-home],.toolbar a[href*="index.html"]{text-decorati
   scrollbar-width:thin;
 }
 .math-display .katex-display{margin:0;}
+
+.series-book-link{text-decoration:none!important;color:inherit}.series-book-link:hover{color:#d9d1e3}
+
+.md-link{color:#aebfe2;text-decoration:underline;text-decoration-color:#7183aa88;text-underline-offset:.16em;transition:color .16s ease,text-decoration-color .16s ease}.md-link:hover{color:#d4def4;text-decoration-color:#aebfe2}

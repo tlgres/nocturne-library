@@ -189,6 +189,7 @@
         title: String(data.title || id).trim(),
         category,
         description: String(data.description || '').trim(),
+        prologue: String(data.prologue || '').trim() || undefined,
         language: 'ko',
         status: 'ongoing',
         kind: data.kind && data.kind !== 'lecture' ? data.kind : undefined,
@@ -197,6 +198,7 @@
         lectures: []
       };
       if (!meta.kind) delete meta.kind;
+      if (!meta.prologue) delete meta.prologue;
       await this.writeJson(`${base}/meta.json`, meta);
       this.library.series = this.library.series || [];
       this.library.series.push({ path: baseRel, meta: `${baseRel}/meta.json` });
@@ -233,6 +235,32 @@
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
       return this.getSeriesById(series.meta.id);
+    }
+
+
+    async updateSeriesMetadata(series, data) {
+      if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
+      series.meta.title = String(data.title || series.meta.title || series.meta.id).trim();
+      series.meta.description = String(data.description || '').trim();
+      const prologue = String(data.prologue || '').trim();
+      if (prologue.length > 500) throw new Error('프롤로그는 500자 이하로 작성하세요.');
+      if (prologue) series.meta.prologue = prologue; else delete series.meta.prologue;
+      if (data.cover === null) delete series.meta.cover;
+      else if (typeof data.cover === 'string' && data.cover) series.meta.cover = data.cover;
+      series.meta.updatedAt = new Date().toISOString().slice(0, 10);
+      await this.writeJson(`${series.base}/meta.json`, series.meta);
+      await this.reload();
+      return this.getSeriesById(series.meta.id);
+    }
+
+    async saveCoverAsset(series, file) {
+      if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
+      const extMatch = /\.(png|jpe?g|webp)$/i.exec(file.name || '');
+      const ext = extMatch ? extMatch[1].toLowerCase().replace('jpeg', 'jpg') : 'webp';
+      const filename = `cover.${ext}`;
+      await this.getDirectory(`${series.base}/assets`, true);
+      await this.writeFile(`${series.base}/assets/${filename}`, file);
+      return `assets/${filename}`;
     }
 
     async saveSpeakerAsset(series, speakerId, file) {
