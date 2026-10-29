@@ -110,10 +110,32 @@
     let chapter = '';
     const m = text.match(/^■\s*([^\n]+)(?:\n+|$)/);
     if (m) { chapter = m[1].trim(); text = text.slice(m[0].length).trim(); }
-    const paragraphs = text
-      ? text.split(/\n{2,}/).map((p, i) => `<p>${inlineWithCloze(p, `${keyPrefix}:p${i}`).replace(/\n/g, '<br>')}</p>`).join('')
+
+    // Display math must be protected before paragraph splitting. Otherwise a source such as
+    //   \[
+    //   ...
+    //   \]
+    // can become three separate <p> elements, leaving KaTeX without a matching delimiter pair.
+    const displayMath = [];
+    const protectedText = text.replace(/\\\[[\s\S]*?\\\]|\$\$[\s\S]*?\$\$/g, match => {
+      const token = `@@NOCTURNE_DISPLAY_MATH_${displayMath.length}@@`;
+      displayMath.push(match);
+      return `\n\n${token}\n\n`;
+    });
+
+    let paragraphIndex = 0;
+    const body = protectedText
+      ? protectedText.split(/\n{2,}/).filter(Boolean).map(part => {
+          const trimmed = part.trim();
+          const tokenMatch = trimmed.match(/^@@NOCTURNE_DISPLAY_MATH_(\d+)@@$/);
+          if (tokenMatch) {
+            const math = displayMath[Number(tokenMatch[1])] || '';
+            return `<div class="math-display">${esc(math)}</div>`;
+          }
+          return `<p>${inlineWithCloze(trimmed, `${keyPrefix}:p${paragraphIndex++}`).replace(/\n/g, '<br>')}</p>`;
+        }).join('')
       : '';
-    return `${chapter ? `<h2 class="chapter">${esc(chapter)}</h2>` : ''}<div class="section-body">${paragraphs}</div>`;
+    return `${chapter ? `<h2 class="chapter">${esc(chapter)}</h2>` : ''}<div class="section-body">${body}</div>`;
   }
 
   function buildSlides(blocks) {

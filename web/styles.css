@@ -1601,3 +1601,16 @@ a.home-link,.home-link,a[data-home],.toolbar a[href*="index.html"]{text-decorati
 .section-body .katex { font-size:1.04em; }
 .section-body p:has(.katex-display) { margin-block:.6em; }
 @media (max-width: 1100px) { .category-select-wrap { display:none; } }
+
+/* v0.14: display math is kept as a single atomic block before KaTeX auto-render. */
+.math-display{
+  display:block;
+  width:100%;
+  margin:1.15em 0 1.3em;
+  overflow-x:auto;
+  overflow-y:hidden;
+  text-align:center;
+  line-height:1.35;
+  scrollbar-width:thin;
+}
+.math-display .katex-display{margin:0;}

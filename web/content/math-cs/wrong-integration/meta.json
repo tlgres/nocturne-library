@@ -13,6 +13,61 @@
       "id": "01",
       "file": "01.md",
       "title": "1강. 왜 적분을 하고 있는가? — 적분하지 않고 적분하기"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 실수 적분에 복소수를 넣은 사람이 있다 — Euler 공식과 복소화"
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "3강. 모르겠으면 문자를 하나 더 넣는다 — Feynman parameter trick"
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "4강. 1차원 적분이 안 풀려서 2차원으로 만들었다 — Gaussian integral과 차원 상승"
+    },
+    {
+      "id": "05",
+      "file": "05.md",
+      "title": "5강. 이것은 적분이 아니라 확률이라고 우기자 — 정규화, 기댓값, Beta와 Gamma"
+    },
+    {
+      "id": "06",
+      "file": "06.md",
+      "title": "6강. 적분구간이 왜 갑자기 복소평면으로 갔는가 — contour deformation"
+    },
+    {
+      "id": "07",
+      "file": "07.md",
+      "title": "7강. 적분은 안 하고 구멍만 센다 — residue theorem과 실적분"
+    },
+    {
+      "id": "08",
+      "file": "08.md",
+      "title": "8강. 삼각함수를 원 위에 가둔다 — z=exp(iθ)와 단위원 적분"
+    },
+    {
+      "id": "09",
+      "file": "09.md",
+      "title": "9강. 모르겠으면 함수에 이름을 붙인다 — Gamma, Beta, erf, elliptic integral"
+    },
+    {
+      "id": "10",
+      "file": "10.md",
+      "title": "10강. 적분 안에 무한급수를 집어넣는다 — 항별적분, 생성함수, zeta와 polylogarithm"
+    },
+    {
+      "id": "11",
+      "file": "11.md",
+      "title": "11강. 대포를 가져오지 말라고는 안 했다 — Fourier, Laplace, Mellin transform"
+    },
+    {
+      "id": "12",
+      "file": "12.md",
+      "title": "12강. 이제 아무도 정상적으로 적분하지 않는다 — 괴적분 종합전"
     }
   ]
 }

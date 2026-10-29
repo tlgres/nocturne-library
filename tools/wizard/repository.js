@@ -238,7 +238,26 @@
     async saveSpeakerAsset(series, speakerId, file) {
       const extMatch = /\.(png|jpe?g|webp|gif)$/i.exec(file.name || '');
       const ext = extMatch ? extMatch[1].toLowerCase().replace('jpeg', 'jpg') : 'png';
-      const safeSpeaker = String(speakerId || 'speaker').toLowerCase().replace(/[^a-z0-9_-]+/g, '-');
+      const rawSpeaker = String(speakerId || 'speaker').trim();
+
+      // Prefer a readable ASCII id when possible. For Korean/Japanese/etc. speaker
+      // ids, the old regexp collapsed every name to '-' and caused all thumbnails
+      // to overwrite the same assets/-.webp file. Use a deterministic Unicode hash
+      // fallback so every distinct speaker gets a stable, collision-resistant name.
+      let safeSpeaker = rawSpeaker.toLowerCase()
+        .replace(/[^a-z0-9_-]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .replace(/-{2,}/g, '-');
+
+      if (!safeSpeaker) {
+        let hash = 2166136261;
+        for (const ch of rawSpeaker) {
+          hash ^= ch.codePointAt(0);
+          hash = Math.imul(hash, 16777619) >>> 0;
+        }
+        safeSpeaker = `speaker-${hash.toString(16).padStart(8, '0')}`;
+      }
+
       const filename = `${safeSpeaker}.${ext}`;
       await this.getDirectory(`${series.base}/assets`, true);
       await this.writeFile(`${series.base}/assets/${filename}`, file);

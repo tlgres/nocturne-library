@@ -240,3 +240,15 @@ body{
   .ring-scene{transform:rotateX(7deg) translateY(48px)!important;}
   .ring-viewport{height:250px!important;margin:-8px auto -24px!important;}
 }
+
+/* v0.14: lower the zodiac assembly so it breathes beneath the top edge. */
+@media (min-width:701px){
+  .ring-viewport{height:310px!important;margin:6px auto -34px!important;}
+  .ring-scene{height:286px!important;transform:rotateX(9deg) translateY(78px)!important;}
+  .orbit-line{top:66%!important;}
+}
+@media (max-width:700px){
+  .ring-scene{transform:rotateX(7deg) translateY(62px)!important;}
+  .ring-viewport{height:270px!important;}
+  .orbit-line{top:64%!important;}
+}

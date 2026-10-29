@@ -7,13 +7,40 @@
   "language": "ko",
   "status": "ongoing",
   "lectures": [
-    {"id":"01","file":"01.md","title":"인간은 정말 특별한가"},
-    {"id":"02","file":"02.md","title":"창의성이란 무엇인가"},
-    {"id":"03","file":"03.md","title":"이해하지 않고도 창작할 수 있는가"}
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "인간은 정말 특별한가"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "창의성이란 무엇인가"
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "이해하지 않고도 창작할 수 있는가"
+    }
   ],
   "dialogueSpeakers": {
-  "A": {"name": "서진", "thumbnail": "assets/seojin.webp"},
-  "B": {"name": "윤제","thumbnail": "assets/yoonje.webp"}
-  }
-
+    "A": {
+      "name": "서진",
+      "thumbnail": "assets/seojin.webp"
+    },
+    "B": {
+      "name": "윤제",
+      "thumbnail": "assets/yoonje.webp"
+    },
+    "서진": {
+      "name": "S",
+      "thumbnail": "assets/-.webp"
+    },
+    "윤재": {
+      "name": "Y",
+      "thumbnail": "assets/-.webp"
+    }
+  },
+  "updatedAt": "2026-10-29",
+  "createdAt": "2026-10-29"
 }
