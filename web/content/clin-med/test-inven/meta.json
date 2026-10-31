@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-10-29",
-  "updatedAt": "2026-10-29",
+  "updatedAt": "2026-10-30",
   "lectures": [
     {
       "id": "01",
@@ -18,6 +18,11 @@
       "id": "02",
       "file": "02.md",
       "title": "2강. 숫자는 사진이 아니라 영화다 — Serial test와 변화량 읽기"
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "3강. 어떤 영상을 찍을 것인가 — X-ray, 초음파, CT, MRI와 조영제의 선택"
     }
   ]
 }

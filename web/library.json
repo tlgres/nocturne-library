@@ -24,6 +24,10 @@
     {
       "path": "content/pol-econ/ukraine-war",
       "meta": "content/pol-econ/ukraine-war/meta.json"
+    },
+    {
+      "path": "content/math-cs/topo-theology",
+      "meta": "content/math-cs/topo-theology/meta.json"
     }
   ]
 }
