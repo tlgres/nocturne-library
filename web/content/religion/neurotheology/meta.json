@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "neurotheology",
+  "title": "종교적 경험의 인지신경과학",
+  "category": "religion",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-10-31",
+  "updatedAt": "2026-10-31",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 신은 어느 엽에 사는가 — Neurotheology라는 수상한 학문"
+    }
+  ],
+  "dialogueSpeakers": {
+    "MONIZ": {
+      "name": "MONIZ",
+      "thumbnail": "assets/moniz.webp",
+      "side": "left"
+    },
+    "HUXLEY": {
+      "name": "HUXLEY",
+      "thumbnail": "assets/huxley.jpg",
+      "side": "right"
+    }
+  }
+}

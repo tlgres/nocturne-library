@@ -223,7 +223,8 @@
       let entry = existingId ? series.meta.lectures.find(x => x.id === existingId) : null;
       if (!entry) {
         entry = { id: lectureId, file: filename, title: String(title || lectureId).trim() };
-        series.meta.lectures.push(entry);
+        if (lectureId === '00') series.meta.lectures.unshift(entry);
+        else series.meta.lectures.push(entry);
       } else {
         entry.id = lectureId;
         entry.file = filename;

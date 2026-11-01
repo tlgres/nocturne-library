@@ -59,10 +59,18 @@
     return fields;
   }
 
+  function containsTex(text) {
+    const value = String(text || '');
+    return /\\\(|\\\[|\$\$|\\(?:frac|sqrt|int|sum|prod|lim|begin|alpha|beta|gamma|theta|pi)\b/.test(value);
+  }
+
   function validate(source, context = {}) {
     const text = String(source || '');
     const issues = [];
     if (!/^#\s+\S/m.test(text)) issues.push(issue('error','missing-title','첫 줄에 Markdown H1 제목(`# 제목`)이 필요합니다.'));
+    const titleLine = (text.match(/^#\s+(.+)$/m) || [,''])[1];
+    if (containsTex(titleLine)) issues.push(issue('warning','math-in-title','강의 제목에는 LaTeX 수식을 넣지 않는 것을 권장합니다.'));
+    for (const match of text.matchAll(/^■\s*(.+)$/gm)) if (containsTex(match[1])) issues.push(issue('warning','math-in-heading',`소제목에 LaTeX 수식이 있습니다: ${match[1].slice(0,60)}`));
     checkStructure(text, issues);
     if (/\[\[\s+(?:NORMAL|FAST|FOCUS|STOP|SIDE|CAST|QUIZ|DIALOGUE)/i.test(text)) issues.push(issue('warning','spaced-token','블록 표식 내부에 공백이 있습니다.'));
 
@@ -95,7 +103,10 @@
         for (const line of block.content.replace(/\r/g,'').split(/\n+/).filter(Boolean)) {
           const p = globalThis.NocturneCore.splitEscapedPipes(line);
           if (p.length < 3) issues.push(issue('error','cast-line',`CAST 행 형식이 SPEAKER|MOTION|TEXT가 아닙니다: ${line.slice(0,80)}`));
-          else if (!['MUTE','ED'].includes(String(p[0]).trim().toUpperCase())) issues.push(issue('warning','cast-speaker',`알 수 없는 CAST speaker: ${p[0]}`));
+          else {
+            if (!['MUTE','ED'].includes(String(p[0]).trim().toUpperCase())) issues.push(issue('warning','cast-speaker',`알 수 없는 CAST speaker: ${p[0]}`));
+            if (containsTex(p.slice(2).join('|'))) issues.push(issue('warning','math-in-cast',`CAST 대사에는 LaTeX 수식을 넣지 않는 것을 권장합니다: ${line.slice(0,80)}`));
+          }
         }
       }
       if (block.type === 'DIALOGUE') {

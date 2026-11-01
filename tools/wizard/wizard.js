@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripBoldBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripBoldBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -22,6 +22,7 @@
     if (preferredId && candidates.some(s => s.meta.id === preferredId)) el.seriesSelect.value = preferredId;
     state.series = repo.getSeriesById(el.seriesSelect.value);
     el.newLectureBtn.disabled = !state.series;
+    if (el.newPrologueBtn) el.newPrologueBtn.disabled = !state.series || !!state.series?.meta?.lectures?.some(x => String(x.id) === '00');
   }
 
   function renderTree() {
@@ -78,6 +79,23 @@
     analyze();
   }
 
+  function beginPrologue() {
+    if (!state.series) return;
+    if (state.series.meta.lectures?.some(x => String(x.id) === '00')) {
+      setMessage('이 시리즈에는 이미 00 프롤로그가 있습니다.', 'error');
+      return;
+    }
+    state.existingLecture = null;
+    state.speakerDrafts = {};
+    el.modeBanner.textContent = '새 프롤로그 · 00'; el.modeBanner.dataset.mode = 'new';
+    el.lectureTitle.value = '프롤로그';
+    el.lectureId.value = '00';
+    el.lectureFile.value = '00.md';
+    el.sourceInput.value = `# 프롤로그\n\n[[NORMAL]]\n\n[[END]]\n`;
+    analyze();
+    el.sourceInput.focus();
+  }
+
   async function loadExistingLecture(seriesId, lectureId) {
     const series = repo.getSeriesById(seriesId); if (!series) return;
     const lecture = series.meta.lectures.find(x => x.id === lectureId); if (!lecture) return;
@@ -124,14 +142,15 @@
     const ids = result.stats.dialogueSpeakers || [];
     if (!ids.length) { el.speakerPanel.classList.add('hidden'); el.speakerList.innerHTML = ''; return; }
     el.speakerPanel.classList.remove('hidden');
-    for (const id of ids) if (!state.speakerDrafts[id]) state.speakerDrafts[id] = structuredClone(state.series?.meta?.dialogueSpeakers?.[id] || { name:id, thumbnail:'' });
+    for (const id of ids) if (!state.speakerDrafts[id]) state.speakerDrafts[id] = structuredClone(state.series?.meta?.dialogueSpeakers?.[id] || { name:id, thumbnail:'', side:(String(id).toUpperCase()==='A'?'left':String(id).toUpperCase()==='B'?'right':'') });
     el.speakerList.innerHTML = ids.map(id => {
       const p = state.speakerDrafts[id] || {};
-      return `<div class="speaker-row" data-speaker="${esc(id)}"><div class="speaker-badge">${esc(id)}</div><div class="field"><label>표시 이름</label><input data-name value="${esc(p.name || id)}"></div><div class="speaker-thumb"><span>${p.thumbnail ? esc(p.thumbnail) : 'thumbnail 없음'}</span><button class="ghost" data-pick>파일 선택</button></div></div>`;
+      return `<div class="speaker-row" data-speaker="${esc(id)}"><div class="speaker-badge">${esc(id)}</div><div class="field"><label>표시 이름</label><input data-name value="${esc(p.name || id)}"></div><div class="field speaker-side-field"><label>위치</label><select data-side><option value="" ${!p.side?'selected':''}>자동</option><option value="left" ${p.side==='left'?'selected':''}>왼쪽</option><option value="right" ${p.side==='right'?'selected':''}>오른쪽</option><option value="minor" ${p.side==='minor'?'selected':''}>보조</option></select></div><div class="speaker-thumb"><span>${p.thumbnail ? esc(p.thumbnail) : 'thumbnail 없음'}</span><button class="ghost" data-pick>파일 선택</button></div></div>`;
     }).join('');
     el.speakerList.querySelectorAll('.speaker-row').forEach(row => {
       const id = row.dataset.speaker;
       row.querySelector('[data-name]').addEventListener('input', e => state.speakerDrafts[id].name = e.target.value);
+      row.querySelector('[data-side]').addEventListener('change', e => state.speakerDrafts[id].side = e.target.value);
       row.querySelector('[data-pick]').addEventListener('click', async () => {
         try {
           const [handle] = await showOpenFilePicker({ multiple:false, types:[{ description:'Image', accept:{ 'image/*':['.png','.jpg','.jpeg','.webp','.gif'] } }] });
@@ -237,6 +256,7 @@
     el.seriesSelect.addEventListener('change', () => { state.series = repo.getSeriesById(el.seriesSelect.value); beginNewLecture(true); });
     el.editSeriesBtn.addEventListener('click', openSeriesEditor);
     el.newLectureBtn.addEventListener('click', () => beginNewLecture(true));
+    el.newPrologueBtn.addEventListener('click', beginPrologue);
     el.newSeriesBtn.addEventListener('click', () => { if (!repo.root) return setMessage('먼저 Repository를 선택하세요.', 'error'); el.newSeriesCategory.value = el.categorySelect.value || repo.categories[0]?.slug; el.seriesDialog.showModal(); });
     el.createSeriesBtn.addEventListener('click', createSeries);
     el.analyzeBtn.addEventListener('click', analyze);

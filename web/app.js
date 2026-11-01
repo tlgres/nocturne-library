@@ -25,7 +25,7 @@
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
-    prefs: {...DEFAULT_PREFS}
+    prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false
   };
 
   function loadPrefs() {
@@ -105,7 +105,7 @@
       const key = `${keyPrefix}:cloze:${clozeIndex++}`;
       const revealed = !!getInteraction(key);
       const label = revealed ? seg.answer : (seg.hint || '••••••');
-      return `<button class="cloze ${revealed ? 'revealed' : ''}" type="button" data-cloze-key="${esc(key)}" aria-pressed="${revealed ? 'true' : 'false'}" title="${revealed ? '다시 가리기' : (seg.hint ? `힌트: ${esc(seg.hint)}` : '정답 보기')}">${inlineMarkdown(label)}</button>`;
+      return `<button class="cloze ${revealed ? 'revealed' : ''}" type="button" data-cloze-key="${esc(key)}" data-cloze-answer="${esc(seg.answer)}" data-cloze-hint="${esc(seg.hint || '')}" aria-pressed="${revealed ? 'true' : 'false'}" title="${revealed ? '다시 가리기' : (seg.hint ? `힌트: ${esc(seg.hint)}` : '정답 보기')}">${inlineMarkdown(label)}</button>`;
     }).join('');
   }
 
@@ -241,9 +241,9 @@
     const lecture = state.meta?.lectures?.[state.lectureIndex] || {};
     const profiles = lecture.dialogueSpeakers || state.meta?.dialogueSpeakers || {};
     const direct = profiles[speaker] || profiles[String(speaker).toUpperCase()] || null;
-    if (!direct) return { name:speaker, thumbnail:'' };
-    if (typeof direct === 'string') return { name:direct, thumbnail:'' };
-    return { name:direct.name || speaker, thumbnail:resolveSeriesAsset(direct.thumbnail || '') };
+    if (!direct) return { name:speaker, thumbnail:'', side:'' };
+    if (typeof direct === 'string') return { name:direct, thumbnail:'', side:'' };
+    return { name:direct.name || speaker, thumbnail:resolveSeriesAsset(direct.thumbnail || ''), side:['left','right','minor'].includes(direct.side) ? direct.side : '' };
   }
 
   function dialogueAvatar(speaker) {
@@ -262,10 +262,23 @@
     });
   }
 
+  function dialogueSideFor(speaker, speakers = []) {
+    const id = String(speaker || '').trim();
+    const upper = id.toUpperCase();
+    if (upper === 'A') return 'left';
+    if (upper === 'B') return 'right';
+    const profile = dialogueProfileFor(id);
+    if (profile.side) return profile.side;
+    if (state.dialogueSideMap.has(id)) return state.dialogueSideMap.get(id);
+    const known = [...state.dialogueSideMap.values()];
+    const side = !known.includes('left') ? 'left' : !known.includes('right') ? 'right' : 'minor';
+    state.dialogueSideMap.set(id, side);
+    return side;
+  }
+
   function dialogueEntryHtml(entry, speakers, index, activeIndex, transcript) {
     if (entry.narrator) return `<div class="dialogue-narrator ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}">${inlineMarkdown(entry.content)}</div>`;
-    const order = speakers.indexOf(entry.speaker);
-    const side = order === 1 ? 'right' : order > 1 ? 'minor' : 'left';
+    const side = dialogueSideFor(entry.speaker, speakers);
     const profile = dialogueProfileFor(entry.speaker);
     return `<article class="dialogue-line ${side} ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}" data-speaker="${esc(entry.speaker)}">
       <div class="dialogue-avatar-wrap"><div class="dialogue-avatar">${dialogueAvatar(entry.speaker)}</div><div class="dialogue-avatar-name">${esc(profile.name)}</div></div>
@@ -412,8 +425,17 @@
 
   function categoryFor(slug) { return state.categories.find(x => x.slug === slug); }
   function positionKey() { return state.meta ? `nocturne:webpos:v1:${state.meta.category}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
+  function completionKey() { return state.meta ? `nocturne:webcomplete:v1:${state.meta.category}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
+  function isLectureCompleted() { const key = completionKey(); return !!key && localStorage.getItem(key) === '1'; }
+  function markLectureCompleted() { const key = completionKey(); if (key) localStorage.setItem(key, '1'); state.reopenedCompleted = false; }
+  function clearLectureCompleted() { const key = completionKey(); if (key) localStorage.removeItem(key); state.reopenedCompleted = false; }
   function savePosition() { const key = positionKey(); if (key) localStorage.setItem(key, String(state.sectionIndex)); }
-  function restorePosition() { const key = positionKey(); const raw = key ? localStorage.getItem(key) : null; const n = Number(raw); return Number.isInteger(n) && n >= 0 && n < state.slides.length ? n : 0; }
+  function restorePosition() {
+    if (isLectureCompleted()) { state.reopenedCompleted = true; return 0; }
+    state.reopenedCompleted = false;
+    const key = positionKey(); const raw = key ? localStorage.getItem(key) : null; const n = Number(raw);
+    return Number.isInteger(n) && n >= 0 && n < state.slides.length ? n : 0;
+  }
 
   async function fetchJson(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.json(); }
   async function fetchText(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.text(); }
@@ -487,6 +509,7 @@
     const source = await fetchText(`${state.seriesPath}/${lecture.file}`);
     const report = Core.validateDocument(source);
     state.doc = Core.parseDocument(source, {allowedSpeakers:['MUTE','ED']});
+    state.dialogueSideMap = new Map();
     state.slides = buildSlides(state.doc.blocks);
     ui.notice.hidden = true;
     ui.lectureIndex.textContent = `Lecture ${String(state.lectureIndex + 1).padStart(2,'0')} · ${state.meta.lectures.length}`;
@@ -534,9 +557,10 @@
     const hasPrevLecture = state.lectureIndex > 0;
     const hasNextLecture = state.lectureIndex < state.meta.lectures.length - 1;
     ui.prevSection.disabled = atFirstSection && !hasPrevLecture;
-    ui.nextSection.disabled = atLastSection && !castRemaining && !hasNextLecture;
+    const completed = isLectureCompleted();
+    ui.nextSection.disabled = atLastSection && !castRemaining && !hasNextLecture && completed;
     ui.prevSection.textContent = atFirstSection && hasPrevLecture ? '← Previous lecture' : '← Prev';
-    ui.nextSection.textContent = atLastSection && !castRemaining && hasNextLecture ? 'Next lecture →' : atLastSection && !castRemaining ? 'Series complete' : 'Next →';
+    ui.nextSection.textContent = atLastSection && !castRemaining && hasNextLecture ? 'Next lecture →' : atLastSection && !castRemaining ? (completed ? 'Completed ✓' : 'Complete ✓') : 'Next →';
     savePosition();
   }
 
@@ -575,8 +599,15 @@
     ui.reader.querySelectorAll('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const key = btn.dataset.clozeKey;
-      setInteraction(key, !getInteraction(key));
-      renderSection();
+      const revealed = !getInteraction(key);
+      setInteraction(key, revealed);
+      const answer = btn.dataset.clozeAnswer || '';
+      const hint = btn.dataset.clozeHint || '';
+      btn.classList.toggle('revealed', revealed);
+      btn.setAttribute('aria-pressed', revealed ? 'true' : 'false');
+      btn.title = revealed ? '다시 가리기' : (hint ? `힌트: ${hint}` : '정답 보기');
+      btn.innerHTML = inlineMarkdown(revealed ? answer : (hint || '••••••'));
+      renderMath(btn);
     }));
     ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -616,7 +647,9 @@
       if (cast.items.length && cast.index < cast.items.length - 1) { stepCast(1); return; }
     }
     if (state.sectionIndex < state.slides.length - 1) { goSection(state.sectionIndex + 1); return; }
-    if (state.lectureIndex < state.meta.lectures.length - 1) openLecture(state.lectureIndex + 1);
+    markLectureCompleted();
+    if (state.lectureIndex < state.meta.lectures.length - 1) { openLecture(state.lectureIndex + 1); return; }
+    renderSection();
   }
 
   function prevReaderStep() {
@@ -627,7 +660,7 @@
     }
     if (state.sectionIndex > 0) { goSection(state.sectionIndex - 1); return; }
     if (state.lectureIndex > 0) {
-      openLecture(state.lectureIndex - 1).then(() => goSection(Math.max(0, state.slides.length - 1)));
+      openLecture(state.lectureIndex - 1).then(() => goSection(Math.max(0, state.slides.length - 1), {preserveCompletion:true}));
     }
   }
 
@@ -636,8 +669,9 @@
     ui.nextLecture.disabled = state.lectureIndex >= state.meta.lectures.length - 1;
   }
 
-  function goSection(index) {
+  function goSection(index, options = {}) {
     if (!Number.isInteger(index) || index < 0 || index >= state.slides.length) return;
+    if (!options.preserveCompletion && state.reopenedCompleted && index > 0) clearLectureCompleted();
     state.sectionIndex = index;
     renderSection();
     ui.reader?.scrollTo({top:0, behavior:'smooth'});

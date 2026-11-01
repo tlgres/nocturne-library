@@ -28,6 +28,18 @@
     {
       "path": "content/math-cs/topo-theology",
       "meta": "content/math-cs/topo-theology/meta.json"
+    },
+    {
+      "path": "content/religion/neurotheology",
+      "meta": "content/religion/neurotheology/meta.json"
+    },
+    {
+      "path": "content/culture/everyday-thought",
+      "meta": "content/culture/everyday-thought/meta.json"
+    },
+    {
+      "path": "content/philosophy/history-of-med-ethics",
+      "meta": "content/philosophy/history-of-med-ethics/meta.json"
     }
   ]
 }

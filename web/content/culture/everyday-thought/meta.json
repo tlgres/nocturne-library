@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "id": "everyday-thought",
+  "title": "구체화된 상념들",
+  "category": "culture",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "kind": "diary",
+  "createdAt": "2026-11-01",
+  "updatedAt": "2026-11-01",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "인간은 기계장치다"
+    }
+  ]
+}
