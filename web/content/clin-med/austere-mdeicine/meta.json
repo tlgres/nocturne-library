@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "austere-mdeicine",
+  "title": "재난의학",
+  "category": "clin-med",
+  "description": "지금 이 자리에서, 무엇을 할 수 있으며, 무엇을 해서는 안 되는가?",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-11-04",
+  "updatedAt": "2026-11-04",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "제1강. 병원 없는 의학 — The Medicine of Scarcity"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "제2강. 피가 멎지 않는 곳 — Hemorrhage & Shock"
+    }
+  ],
+  "dialogueSpeakers": {
+    "A": {
+      "name": "A",
+      "thumbnail": "assets/a.webp",
+      "side": "left"
+    },
+    "B": {
+      "name": "B",
+      "thumbnail": "assets/b.webp",
+      "side": "right"
+    }
+  }
+}

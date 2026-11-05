@@ -40,6 +40,14 @@
     {
       "path": "content/philosophy/history-of-med-ethics",
       "meta": "content/philosophy/history-of-med-ethics/meta.json"
+    },
+    {
+      "path": "content/clin-med/austere-mdeicine",
+      "meta": "content/clin-med/austere-mdeicine/meta.json"
+    },
+    {
+      "path": "content/language/forensic-intelligence-analysis",
+      "meta": "content/language/forensic-intelligence-analysis/meta.json"
     }
   ]
 }
