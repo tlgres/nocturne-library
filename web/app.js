@@ -15,13 +15,13 @@
     muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas'),
     immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
     fontSelect: $('reader-font-select'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
-    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), settingsReset: $('reader-settings-reset')
+    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset')
   };
 
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
   const PREF_KEY = 'nocturne:webprefs:v1';
   const DIALOGUE_MODE_KEY = 'nocturne:dialogue-mode:v1';
-  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, companions:true };
+  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, companions:true, showLinks:true };
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
@@ -47,6 +47,7 @@
     if (ui.fontSizeValue) ui.fontSizeValue.value = `${state.prefs.fontSize}px`;
     if (ui.lineHeight) ui.lineHeight.value = String(state.prefs.lineHeight);
     if (ui.lineHeightValue) ui.lineHeightValue.value = Number(state.prefs.lineHeight).toFixed(2);
+    if (ui.linkMode) ui.linkMode.value = state.prefs.showLinks === false ? 'text' : 'show';
     if (ui.immersiveToggle) {
       ui.immersiveToggle.setAttribute('aria-pressed', state.prefs.immersive ? 'true' : 'false');
       ui.immersiveToggle.classList.toggle('active', !!state.prefs.immersive);
@@ -70,7 +71,7 @@
     let s = esc(text);
     // Basic Markdown links. Only http/https targets are linkified; everything else stays text.
     s = s.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/gi, (_m, label, href) => {
-      return `<a class="md-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+      return state.prefs.showLinks === false ? label : `<a class="md-link" href="${href}" target="_blank" rel="noopener noreferrer">${label}</a>`;
     });
     s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
     s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
@@ -200,28 +201,6 @@
     return `<section class="quiz-card" data-kind="recall"><div class="quiz-question">${inlineMarkdown(quiz.question)}</div>${answer}</section>`;
   }
 
-  function castHtml(items) {
-    if (!items.length) return '';
-    const label = speaker => speaker === 'MUTE' ? '뮤트' : speaker === 'ED' ? '이드' : speaker;
-    return `<aside class="cast-stack">${items.map(item => `<div class="cast-line" data-speaker="${esc(item.speaker)}"><div class="cast-speaker">${esc(label(item.speaker))}</div><div class="cast-content">${inlineMarkdown(item.content)}</div></div>`).join('')}</aside>`;
-  }
-
-  function extrasHtml(slide, slideIndex) {
-    const chunks = [];
-    let castBuffer = [];
-    const flushCast = () => {
-      if (!castBuffer.length) return;
-      chunks.push(castHtml(castBuffer));
-      castBuffer = [];
-    };
-    slide.extras.forEach((block, i) => {
-      if (block.type === 'cast') castBuffer.push(block);
-      else if (block.type === 'quiz') { flushCast(); chunks.push(quizHtml(block, slideIndex, i)); }
-    });
-    flushCast();
-    return chunks.length ? `<div class="interactive-layer">${chunks.join('')}</div>` : '';
-  }
-
   function resolveSeriesAsset(path) {
     const value = String(path || '').trim().replace(/\\/g, '/');
     if (!value) return '';
@@ -276,11 +255,18 @@
     return side;
   }
 
-  function dialogueEntryHtml(entry, speakers, index, activeIndex, transcript) {
-    if (entry.narrator) return `<div class="dialogue-narrator ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}">${inlineMarkdown(entry.content)}</div>`;
+  function dialogueEntryHtml(entry, speakers, index, flowState, transcript) {
+    let visibility = '';
+    let hiddenAttr = '';
+    if (!transcript) {
+      if (flowState.showAll || flowState.active.has(index)) visibility = 'is-flow-active';
+      else if (flowState.context.has(index)) visibility = 'is-flow-context';
+      else { visibility = 'is-hidden'; hiddenAttr = ' hidden'; }
+    }
+    if (entry.narrator) return `<div class="dialogue-narrator ${visibility}" data-dialogue-entry="${index}"${hiddenAttr}>${inlineMarkdown(entry.content)}</div>`;
     const side = dialogueSideFor(entry.speaker, speakers);
     const profile = dialogueProfileFor(entry.speaker);
-    return `<article class="dialogue-line ${side} ${!transcript && index !== activeIndex ? 'is-hidden' : ''}" data-dialogue-entry="${index}" data-speaker="${esc(entry.speaker)}">
+    return `<article class="dialogue-line ${side} ${visibility}" data-dialogue-entry="${index}" data-speaker="${esc(entry.speaker)}"${hiddenAttr}>
       <div class="dialogue-avatar-wrap"><div class="dialogue-avatar">${dialogueAvatar(entry.speaker)}</div><div class="dialogue-avatar-name">${esc(profile.name)}</div></div>
       <div class="dialogue-bubble"><div class="dialogue-text">${inlineMarkdown(entry.content)}</div></div>
     </article>`;
@@ -292,15 +278,21 @@
     const modeKey = `s${slideIndex}:dialogue:mode`;
     const stepKey = `s${slideIndex}:dialogue:step`;
     const mode = getInteraction(modeKey) || localStorage.getItem(DIALOGUE_MODE_KEY) || 'flow';
+    const transcript = mode === 'transcript';
+    const showAll = entries.length <= 4;
+    const maxStep = Math.max(0, entries.length - 2);
     let step = Number(getInteraction(stepKey) ?? 0);
     if (!Number.isInteger(step) || step < 0) step = 0;
-    if (entries.length) step = Math.min(step, entries.length - 1);
-    const transcript = mode === 'transcript';
+    step = Math.min(step, maxStep);
+    const active = new Set(showAll ? entries.map((_,i)=>i) : [step, step + 1].filter(i => i < entries.length));
+    const context = new Set(showAll ? [] : [step - 1, step + 2].filter(i => i >= 0 && i < entries.length));
+    const flowState = {showAll, active, context};
     const rail = speakers.length > 2 ? `<div class="dialogue-speaker-rail">${speakers.slice(2).map(sp => { const p=dialogueProfileFor(sp); return `<span class="dialogue-rail-person">${dialogueAvatar(sp)}<span>${esc(p.name)}</span></span>`; }).join('')}</div>` : '';
-    const body = entries.map((entry,i) => dialogueEntryHtml(entry, speakers, i, step, transcript)).join('');
+    const body = entries.map((entry,i) => dialogueEntryHtml(entry, speakers, i, flowState, transcript)).join('');
+    const rangeLabel = showAll ? `${entries.length} / ${entries.length}` : `${entries.length ? step+1 : 0}–${Math.min(step+2, entries.length)} / ${entries.length}`;
     const controls = `<div class="dialogue-controls">
       <div class="dialogue-mode"><button type="button" data-dialogue-action="mode" data-key="${modeKey}" data-value="flow" class="${!transcript ? 'selected' : ''}">Flow</button><button type="button" data-dialogue-action="mode" data-key="${modeKey}" data-value="transcript" class="${transcript ? 'selected' : ''}">Transcript</button></div>
-      ${transcript ? '' : `<div class="dialogue-step"><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="prev" ${step <= 0 ? 'disabled' : ''}>←</button><span>${entries.length ? step+1 : 0} / ${entries.length}</span><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="next" ${step >= entries.length-1 ? 'disabled' : ''}>→</button></div>`}
+      ${transcript || showAll ? '' : `<div class="dialogue-step"><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="prev" ${step <= 0 ? 'disabled' : ''}>←</button><span>${rangeLabel}</span><button type="button" data-dialogue-action="step" data-key="${stepKey}" data-value="next" ${step >= maxStep ? 'disabled' : ''}>→</button></div>`}
     </div>`;
     return `<div class="dialogue-scene" data-dialogue-mode="${mode}">${rail}<div class="dialogue-stage">${body || '<div class="dialogue-empty">Dialogue is empty.</div>'}</div>${controls}</div>`;
   }
@@ -313,10 +305,10 @@
   }
 
   function quizReactionFor(slide) {
-    const quizItems = slide.extras.filter(x => x.type === 'quiz');
-    if (!quizItems.length) return null;
-    const quiz = quizItems[0];
-    const quizIndex = slide.extras.indexOf(quiz);
+    const current = currentQuizFor(slide);
+    if (!current.item) return null;
+    const quiz = current.item.block;
+    const quizIndex = current.item.extraIndex;
     const base = `s${state.sectionIndex}:q${quizIndex}`;
     if (quiz.quiz.kind === 'recall') {
       const self = getInteraction(`${base}:self`);
@@ -372,8 +364,26 @@
     return `<div class="cast-bubble cast-bubble-full" data-speaker="${esc(item.speaker)}"><div class="cast-bubble-head"><span class="cast-bubble-speaker">${esc(label)}</span>${controls}</div><div class="cast-bubble-line">${inlineMarkdown(item.content)}</div></div>`;
   }
 
-  function quizStackHtml(slide, slideIndex) {
-    return slide.extras.map((block, i) => block.type === 'quiz' ? quizHtml(block, slideIndex, i) : '').filter(Boolean).join('');
+  function quizItemsFor(slide) {
+    return (slide?.extras || []).map((block, extraIndex) => ({block, extraIndex})).filter(x => x.block.type === 'quiz');
+  }
+
+  function currentQuizFor(slide) {
+    const items = quizItemsFor(slide);
+    const key = `s${state.sectionIndex}:quiz:step`;
+    let index = Number(getInteraction(key) ?? 0);
+    if (!Number.isInteger(index)) index = 0;
+    index = Math.max(0, Math.min(index, Math.max(0, items.length - 1)));
+    return {items, index, item:items[index] || null, key};
+  }
+
+  function quizQueueHtml(slide, slideIndex) {
+    const current = currentQuizFor(slide);
+    if (!current.item) return '';
+    const card = quizHtml(current.item.block, slideIndex, current.item.extraIndex);
+    if (current.items.length <= 1) return card;
+    const controls = `<div class="quiz-sequence-controls"><button type="button" data-quiz-nav="prev" data-key="${current.key}" ${current.index <= 0 ? 'disabled' : ''}>←</button><span>문제 ${current.index + 1} / ${current.items.length}</span><button type="button" data-quiz-nav="next" data-key="${current.key}" ${current.index >= current.items.length - 1 ? 'disabled' : ''}>→</button></div>`;
+    return `<div class="quiz-sequence" data-quiz-count="${current.items.length}" data-quiz-index="${current.index}">${card}${controls}</div>`;
   }
 
   function renderStage(slide) {
@@ -398,7 +408,7 @@
     ui.stage.classList.toggle('has-cast', hasCast);
     ui.stageStatus.textContent = (hasQuiz ? 'QUIZ' : hasCast ? 'CAST' : primaryType).toUpperCase();
 
-    const quizMarkup = hasQuiz ? quizStackHtml(slide, state.sectionIndex) : '';
+    const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
     if (ui.quizMessage) {
       ui.quizMessage.innerHTML = quizMarkup;
       ui.quizMessage.hidden = !quizMarkup;
@@ -424,8 +434,10 @@
   }
 
   function categoryFor(slug) { return state.categories.find(x => x.slug === slug); }
-  function positionKey() { return state.meta ? `nocturne:webpos:v1:${state.meta.category}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
-  function completionKey() { return state.meta ? `nocturne:webcomplete:v1:${state.meta.category}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
+  function seriesGroup(meta) { return meta?.kind === 'diary' ? '__diary' : meta?.kind === 'journal' ? '__journal' : meta?.category || ''; }
+  function groupLabel(group) { return group === '__diary' ? '유성 기록' : group === '__journal' ? '궤도 문헌실' : (categoryFor(group)?.ko || group); }
+  function positionKey() { return state.meta ? `nocturne:webpos:v1:${seriesGroup(state.meta)}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
+  function completionKey() { return state.meta ? `nocturne:webcomplete:v1:${seriesGroup(state.meta)}:${state.meta.id}:${state.meta.lectures[state.lectureIndex]?.id || state.lectureIndex}` : ''; }
   function isLectureCompleted() { const key = completionKey(); return !!key && localStorage.getItem(key) === '1'; }
   function markLectureCompleted() { const key = completionKey(); if (key) localStorage.setItem(key, '1'); state.reopenedCompleted = false; }
   function clearLectureCompleted() { const key = completionKey(); if (key) localStorage.removeItem(key); state.reopenedCompleted = false; }
@@ -441,7 +453,7 @@
   async function fetchText(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.text(); }
 
   function seriesIndicesForCategory(slug) {
-    return state.seriesList.map((series, index) => ({series, index})).filter(x => x.series.data.category === slug);
+    return state.seriesList.map((series, index) => ({series, index})).filter(x => seriesGroup(x.series.data) === slug);
   }
 
   function populateSeriesSelect(categorySlug, selectedGlobalIndex = null) {
@@ -458,8 +470,11 @@
     state.categories = cats.categories || [];
     state.catalog = library.series || [];
     state.seriesList = await Promise.all(state.catalog.map(async item => ({...item, data: await fetchJson(item.meta)})));
-    const populated = new Set(state.seriesList.map(x => x.data.category));
-    ui.categorySelect.innerHTML = state.categories.filter(cat => populated.has(cat.slug)).map(cat => `<option value="${esc(cat.slug)}">${esc(cat.ko)}</option>`).join('');
+    const populated = new Set(state.seriesList.map(x => seriesGroup(x.data)));
+    const categoryOptions = state.categories.filter(cat => populated.has(cat.slug)).map(cat => `<option value="${esc(cat.slug)}">${esc(cat.ko)}</option>`);
+    if (populated.has('__diary')) categoryOptions.push('<option value="__diary">유성 기록</option>');
+    if (populated.has('__journal')) categoryOptions.push('<option value="__journal">궤도 문헌실</option>');
+    ui.categorySelect.innerHTML = categoryOptions.join('');
   }
 
   function routeSelection() {
@@ -489,13 +504,13 @@
     state.seriesPath = selected.path;
     state.meta = selected.data;
     state.lectureIndex = Math.min(Math.max(lectureIdx,0), state.meta.lectures.length - 1);
-    if (ui.categorySelect) ui.categorySelect.value = state.meta.category;
-    populateSeriesSelect(state.meta.category, seriesIdx);
+    const group = seriesGroup(state.meta);
+    if (ui.categorySelect) ui.categorySelect.value = group;
+    populateSeriesSelect(group, seriesIdx);
     ui.lectureSelect.innerHTML = state.meta.lectures.map((x,i) => `<option value="${i}">${String(i+1).padStart(2,'0')} · ${esc(x.title || x.id)}</option>`).join('');
     ui.seriesName.textContent = state.meta.title; ui.seriesName.dataset.seriesId = state.meta.id; ui.seriesName.href = `book.html?series=${encodeURIComponent(state.meta.id)}`;
     ui.seriesDescription.textContent = state.meta.description || '';
-    const cat = categoryFor(state.meta.category);
-    ui.categoryName.textContent = cat ? cat.ko : state.meta.category;
+    ui.categoryName.textContent = groupLabel(group);
     await openLecture(state.lectureIndex);
   }
 
@@ -585,6 +600,19 @@
         if (ui.quizMessage) ui.quizMessage.scrollTop = quizTop;
       });
     }));
+
+    all('[data-quiz-nav]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const key = btn.dataset.key;
+      const current = Number(getInteraction(key) ?? 0);
+      const slide = state.slides[state.sectionIndex];
+      const count = quizItemsFor(slide).length;
+      const next = Math.max(0, Math.min(Math.max(0, count - 1), current + (btn.dataset.quizNav === 'next' ? 1 : -1)));
+      setInteraction(key, next);
+      renderStage(slide);
+      bindStageEvents();
+    }));
+
     all('[data-cast-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const key = btn.dataset.key;
@@ -698,6 +726,7 @@
   ui.fontSelect?.addEventListener('change', () => updatePrefs({font: ui.fontSelect.value}));
   ui.fontSize?.addEventListener('input', () => updatePrefs({fontSize: Number(ui.fontSize.value)}));
   ui.lineHeight?.addEventListener('input', () => updatePrefs({lineHeight: Number(ui.lineHeight.value)}));
+  ui.linkMode?.addEventListener('change', () => { updatePrefs({showLinks: ui.linkMode.value !== 'text'}); renderSection(); });
   ui.settingsReset?.addEventListener('click', () => { state.prefs = {...DEFAULT_PREFS}; savePrefs(); applyPrefs(); });
   document.addEventListener('pointerdown', e => {
     if (!ui.settingsPanel || ui.settingsPanel.hidden) return;
@@ -715,8 +744,9 @@
       const key = `s${state.sectionIndex}:dialogue:step`;
       const entries = slide.primary.dialogue?.entries || [];
       const step = Number(getInteraction(key) ?? 0);
-      if ((e.key === 'ArrowRight' || e.key === ' ') && step < entries.length - 1) { e.preventDefault(); setInteraction(key, step + 1); renderSection(); return; }
-      if (e.key === 'ArrowLeft' && step > 0) { e.preventDefault(); setInteraction(key, step - 1); renderSection(); return; }
+      const maxStep = Math.max(0, entries.length - 2);
+      if ((e.key === 'ArrowRight' || e.key === ' ') && entries.length > 4 && step < maxStep) { e.preventDefault(); setInteraction(key, step + 1); renderSection(); return; }
+      if (e.key === 'ArrowLeft' && entries.length > 4 && step > 0) { e.preventDefault(); setInteraction(key, step - 1); renderSection(); return; }
     }
     if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); if (!ui.nextSection.disabled || currentCastFor(slide || {extras:[]}).items.length) nextReaderStep(); }
     if (e.key === 'ArrowLeft') { e.preventDefault(); if (!ui.prevSection.disabled || currentCastFor(slide || {extras:[]}).index >= 0) prevReaderStep(); }

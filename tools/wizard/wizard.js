@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripBoldBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -11,57 +11,48 @@
 
   function populateCategorySelects() {
     const html = repo.categories.map(c => `<option value="${esc(c.slug)}">${esc(c.ko)} · ${esc(c.en)}</option>`).join('');
-    el.categorySelect.innerHTML = html;
+    const special = `${repo.series.some(s=>s.meta?.kind==='diary')?'<option value="__diary">유성 기록</option>':''}${repo.series.some(s=>s.meta?.kind==='journal')?'<option value="__journal">궤도 문헌실</option>':''}`;
+    el.categorySelect.innerHTML = html + special;
     el.newSeriesCategory.innerHTML = html;
   }
 
   function populateSeriesSelect(preferredId = null) {
     const cat = el.categorySelect.value;
-    const candidates = repo.series.filter(s => s.meta?.category === cat);
+    const candidates = repo.series.filter(s => cat === '__diary' ? s.meta?.kind === 'diary' : cat === '__journal' ? s.meta?.kind === 'journal' : s.meta?.category === cat && !['diary','journal'].includes(s.meta?.kind));
     el.seriesSelect.innerHTML = candidates.map(s => `<option value="${esc(s.meta.id)}">${esc(s.meta.title)}</option>`).join('');
     if (preferredId && candidates.some(s => s.meta.id === preferredId)) el.seriesSelect.value = preferredId;
     state.series = repo.getSeriesById(el.seriesSelect.value);
     el.newLectureBtn.disabled = !state.series;
     if (el.newPrologueBtn) el.newPrologueBtn.disabled = !state.series || !!state.series?.meta?.lectures?.some(x => String(x.id) === '00');
+    if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = !state.existingLecture;
   }
 
   function renderTree() {
     if (!repo.root) return;
-    const groups = repo.categories.map(cat => {
-      const series = repo.series.filter(s => s.meta?.category === cat.slug);
-      const catOpen = state.expandedCats.has(cat.slug);
-      const catHead = `<button class="tree-toggle" data-cat="${cat.slug}"><span class="tree-chevron">${catOpen ? '▾' : '▸'}</span><span>${esc(cat.ko)}</span><small>${series.length}</small></button>`;
-      if (!series.length) return `<div class="tree-category empty-cat">${catHead}</div>`;
-      const seriesHtml = catOpen ? series.map(item => {
+    const groups = [
+      ...repo.categories.map(cat => ({key:cat.slug,label:cat.ko,items:repo.series.filter(s=>s.meta?.category===cat.slug&&!['diary','journal'].includes(s.meta?.kind))})),
+      {key:'__diary',label:'유성 기록',items:repo.series.filter(s=>s.meta?.kind==='diary')},
+      {key:'__journal',label:'궤도 문헌실',items:repo.series.filter(s=>s.meta?.kind==='journal')}
+    ];
+    el.libraryTree.innerHTML = groups.map(group => {
+      const catOpen = state.expandedCats.has(group.key);
+      const catHead = `<button class="tree-toggle" data-cat="${group.key}"><span class="tree-chevron">${catOpen?'▾':'▸'}</span><span>${esc(group.label)}</span><small>${group.items.length}</small></button>`;
+      if (!group.items.length) return `<div class="tree-category empty-cat">${catHead}</div>`;
+      const seriesHtml = catOpen ? group.items.map(item => {
         const seriesOpen = state.expandedSeries.has(item.meta.id);
-        const lectures = seriesOpen ? `<div class="tree-lectures">${(item.meta.lectures||[]).map(l => `<button data-series="${esc(item.meta.id)}" data-lecture="${esc(l.id)}"><span>${esc(l.id)}</span>${esc(l.title)}</button>`).join('')}</div>` : '';
-        return `<div class="tree-series"><button data-series="${esc(item.meta.id)}"><span class="tree-chevron">${seriesOpen ? '▾' : '▸'}</span>${esc(item.meta.title)}</button>${lectures}</div>`;
+        const lectures = seriesOpen ? `<div class="tree-lectures">${(item.meta.lectures||[]).map(l=>`<button data-series="${esc(item.meta.id)}" data-lecture="${esc(l.id)}"><span>${esc(l.id)}</span>${esc(l.title)}</button>`).join('')}</div>` : '';
+        return `<div class="tree-series"><button data-series="${esc(item.meta.id)}"><span class="tree-chevron">${seriesOpen?'▾':'▸'}</span>${esc(item.meta.title)}</button>${lectures}</div>`;
       }).join('') : '';
-      return `<div class="tree-category ${catOpen ? 'open' : ''}">${catHead}${seriesHtml}</div>`;
+      return `<div class="tree-category ${catOpen?'open':''}">${catHead}${seriesHtml}</div>`;
     }).join('');
-    el.libraryTree.innerHTML = groups;
-    el.libraryTree.querySelectorAll('[data-cat]').forEach(btn => btn.addEventListener('click', () => {
-      const cat = btn.dataset.cat;
-      if (state.expandedCats.has(cat)) state.expandedCats.delete(cat); else state.expandedCats.add(cat);
-      el.categorySelect.value = cat; populateSeriesSelect();
-      renderTree();
-    }));
-    el.libraryTree.querySelectorAll('[data-series]:not([data-lecture])').forEach(btn => btn.addEventListener('click', () => {
-      const id = btn.dataset.series; const series = repo.getSeriesById(id);
-      if (series) state.expandedCats.add(series.meta.category);
-      if (state.expandedSeries.has(id)) state.expandedSeries.delete(id); else state.expandedSeries.add(id);
-      selectSeries(id); renderTree();
-    }));
-    el.libraryTree.querySelectorAll('[data-lecture]').forEach(btn => btn.addEventListener('click', () => {
-      const series = repo.getSeriesById(btn.dataset.series);
-      if (series) { state.expandedCats.add(series.meta.category); state.expandedSeries.add(series.meta.id); }
-      loadExistingLecture(btn.dataset.series, btn.dataset.lecture);
-    }));
+    el.libraryTree.querySelectorAll('[data-cat]').forEach(btn=>btn.addEventListener('click',()=>{const cat=btn.dataset.cat;if(state.expandedCats.has(cat))state.expandedCats.delete(cat);else state.expandedCats.add(cat);el.categorySelect.value=cat;populateSeriesSelect();renderTree();}));
+    el.libraryTree.querySelectorAll('[data-series]:not([data-lecture])').forEach(btn=>btn.addEventListener('click',()=>{const id=btn.dataset.series,series=repo.getSeriesById(id);if(series)state.expandedCats.add(series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category);if(state.expandedSeries.has(id))state.expandedSeries.delete(id);else state.expandedSeries.add(id);selectSeries(id);renderTree();}));
+    el.libraryTree.querySelectorAll('[data-lecture]').forEach(btn=>btn.addEventListener('click',()=>{const series=repo.getSeriesById(btn.dataset.series);if(series){state.expandedCats.add(series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category);state.expandedSeries.add(series.meta.id);}loadExistingLecture(btn.dataset.series,btn.dataset.lecture);}));
   }
 
   function selectSeries(id) {
     const series = repo.getSeriesById(id); if (!series) return;
-    el.categorySelect.value = series.meta.category; populateSeriesSelect(id); beginNewLecture(false);
+    el.categorySelect.value = series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category; populateSeriesSelect(id); beginNewLecture(false);
   }
 
   function suggestLecture() {
@@ -76,6 +67,7 @@
     el.modeBanner.textContent = '새 강의'; el.modeBanner.dataset.mode = 'new';
     el.lectureTitle.value = ''; suggestLecture();
     if (clearSource) el.sourceInput.value = '';
+    if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = true;
     analyze();
   }
 
@@ -87,6 +79,7 @@
     }
     state.existingLecture = null;
     state.speakerDrafts = {};
+    if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = true;
     el.modeBanner.textContent = '새 프롤로그 · 00'; el.modeBanner.dataset.mode = 'new';
     el.lectureTitle.value = '프롤로그';
     el.lectureId.value = '00';
@@ -99,15 +92,16 @@
   async function loadExistingLecture(seriesId, lectureId) {
     const series = repo.getSeriesById(seriesId); if (!series) return;
     const lecture = series.meta.lectures.find(x => x.id === lectureId); if (!lecture) return;
-    el.categorySelect.value = series.meta.category; populateSeriesSelect(seriesId); state.series = series;
+    el.categorySelect.value = series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category; populateSeriesSelect(seriesId); state.series = series;
     const text = await repo.loadLecture(series, lecture);
     state.existingLecture = { ...lecture };
-    state.expandedCats.add(series.meta.category); state.expandedSeries.add(series.meta.id); renderTree();
+    state.expandedCats.add(series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category); state.expandedSeries.add(series.meta.id); renderTree();
     el.modeBanner.textContent = `기존 강의 수정 · ${lecture.id}`; el.modeBanner.dataset.mode = 'edit';
     el.lectureTitle.value = lecture.title || '';
     el.lectureId.value = lecture.id; el.lectureFile.value = lecture.file;
     el.sourceInput.value = text;
     state.speakerDrafts = structuredClone(series.meta.dialogueSpeakers || {});
+    if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = false;
     analyze();
   }
 
@@ -179,7 +173,7 @@
       el.repoState.textContent = `연결됨 · ${repo.root.name}`;
       populateCategorySelects(); renderTree();
       const firstSeries = repo.series.find(x => x.meta);
-      if (firstSeries) { el.categorySelect.value = firstSeries.meta.category; populateSeriesSelect(firstSeries.meta.id); beginNewLecture(false); }
+      if (firstSeries) { el.categorySelect.value = firstSeries.meta.kind==='diary'?'__diary':firstSeries.meta.kind==='journal'?'__journal':firstSeries.meta.category; populateSeriesSelect(firstSeries.meta.id); beginNewLecture(false); }
       setMessage('Repository를 읽었습니다.', 'ok');
     } catch (err) { el.repoState.textContent = '연결 실패'; setMessage(err.message, 'error'); }
   }
@@ -202,7 +196,7 @@
     try {
       const series = await repo.createSeries({ category:el.newSeriesCategory.value, id:el.newSeriesId.value, title:el.newSeriesTitle.value, description:el.newSeriesDescription.value, kind:el.newSeriesKind.value });
       el.seriesDialog.close(); populateCategorySelects(); renderTree();
-      el.categorySelect.value = series.meta.category; populateSeriesSelect(series.meta.id); state.series = series; beginNewLecture(true);
+      el.categorySelect.value = series.meta.kind==='diary'?'__diary':series.meta.kind==='journal'?'__journal':series.meta.category; populateSeriesSelect(series.meta.id); state.series = series; beginNewLecture(true);
       setMessage(`새 시리즈 생성: ${series.meta.title}`, 'ok');
     } catch (err) { setMessage(err.message, 'error'); }
   }
@@ -257,10 +251,16 @@
     el.editSeriesBtn.addEventListener('click', openSeriesEditor);
     el.newLectureBtn.addEventListener('click', () => beginNewLecture(true));
     el.newPrologueBtn.addEventListener('click', beginPrologue);
-    el.newSeriesBtn.addEventListener('click', () => { if (!repo.root) return setMessage('먼저 Repository를 선택하세요.', 'error'); el.newSeriesCategory.value = el.categorySelect.value || repo.categories[0]?.slug; el.seriesDialog.showModal(); });
+    el.newSeriesBtn.addEventListener('click', () => { if (!repo.root) return setMessage('먼저 Repository를 선택하세요.', 'error'); el.newSeriesKind.value='lecture'; const desired=repo.categories.some(c=>c.slug===el.categorySelect.value)?el.categorySelect.value:repo.categories[0]?.slug; el.newSeriesCategory.value=desired||''; el.newSeriesCategory.disabled=false; el.newSeriesCategoryField?.classList.remove('is-disabled'); el.seriesDialog.showModal(); });
     el.createSeriesBtn.addEventListener('click', createSeries);
     el.analyzeBtn.addEventListener('click', analyze);
     el.clearBtn.addEventListener('click', () => { if (el.sourceInput.value && !confirm('붙여넣은 강의를 비울까요?')) return; el.sourceInput.value=''; el.lectureTitle.value=''; analyze(); });
+    el.stripLinksBtn.addEventListener('click', () => {
+      let count=0;
+      el.sourceInput.value = el.sourceInput.value.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/gi, (_m,label)=>{count++;return label;});
+      if(!count)return setMessage('Markdown 링크가 없습니다.');
+      analyze(); setMessage(`링크 ${count}개 제거 · 표시문자는 유지`, 'ok');
+    });
     el.stripBoldBtn.addEventListener('click', () => {
       const count = (el.sourceInput.value.match(/\*\*/g) || []).length;
       if (!count) return setMessage('** 문자열이 없습니다.');
@@ -276,6 +276,27 @@
     el.clearCoverBtn.addEventListener('click', () => { state.pendingCoverFile = null; state.coverCleared = true; renderCoverPreview(state.series); });
     el.editSeriesPrologue.addEventListener('input', () => el.prologueCount.textContent = `${el.editSeriesPrologue.value.length} / 500`);
     el.saveSeriesMetaBtn.addEventListener('click', saveSeriesMetadata);
+
+    el.deleteLectureBtn.addEventListener('click', async () => {
+      if(!state.series || !state.existingLecture) return;
+      const lec={...state.existingLecture};
+      if(!confirm(`강의 ${lec.id} · ${lec.title || lec.file}
+
+${lec.file} 파일과 목차 항목을 삭제합니다. 계속할까요?`)) return;
+      try{
+        const updated=await repo.deleteLecture(state.series,lec.id);
+        state.series=updated; state.existingLecture=null; state.speakerDrafts={};
+        populateCategorySelects(); el.categorySelect.value=updated.meta.kind==='diary'?'__diary':updated.meta.kind==='journal'?'__journal':updated.meta.category; populateSeriesSelect(updated.meta.id); renderTree(); beginNewLecture(true);
+        setMessage(`${lec.file} 삭제 · meta.json 갱신 완료`,'ok');
+      }catch(err){setMessage(err.message,'error');}
+    });
+    const syncSeriesKind = () => {
+      const special=['diary','journal'].includes(el.newSeriesKind.value);
+      el.newSeriesCategory.disabled=special;
+      el.newSeriesCategoryField?.classList.toggle('is-disabled',special);
+    };
+    el.newSeriesKind.addEventListener('change',syncSeriesKind); syncSeriesKind();
+
     el.saveBtn.addEventListener('click', save);
   }
 

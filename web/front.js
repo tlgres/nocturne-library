@@ -1,15 +1,23 @@
 (() => {
   'use strict';
+
   const $ = id => document.getElementById(id);
   const ui = {
     ring:$('ring'), scene:$('ring-scene'), dots:$('ring-dots'), prev:$('ring-prev'), next:$('ring-next'),
-    symbol:$('category-symbol'), title:$('category-title'), en:$('category-en'), description:$('category-description'), stats:$('category-stats'),
-    enter:$('enter-shelf'), allInShelf:$('all-in-shelf'), categorySeries:$('category-series'),
+    title:$('category-title'), en:$('category-en'), description:$('category-description'), stats:$('category-stats'),
+    enter:$('enter-shelf'), constellation:$('constellation-host'), satellites:$('satellite-field'), nebula:$('focus-nebula'),
     panel:$('nav-panel'), panelTitle:$('nav-panel-title'), panelKicker:$('nav-panel-kicker'), searchView:$('panel-search'), recentView:$('panel-recent'), allView:$('panel-all'),
-    search:$('library-search'), searchResults:$('search-results'), recentResults:$('recent-results'), allCategories:$('all-categories'), starCanvas:$('star-canvas'),
+    search:$('library-search'), searchResults:$('search-results'), recentResults:$('recent-results'), allCategories:$('all-categories'),
+    farStars:$('far-stars'), midStars:$('mid-stars'), nearStars:$('near-stars'),
     portal:$('portal-panel'), portalSymbol:$('portal-panel-symbol'), portalLabel:$('portal-panel-label'), portalTitle:$('portal-panel-title'), portalContent:$('portal-panel-content'), portalMore:$('portal-panel-more')
   };
-  const state = { categories:[], series:[], index:6, angle:0, dragging:false, dragStartX:0, dragStartAngle:0, lastWheel:0 };
+
+  const state = {
+    categories:[], series:[], index:6, angle:0,
+    dragging:false, dragMoved:false, dragStartX:0, dragStartAngle:0, dragStartIndex:-1, lastWheel:0,
+    constellationToken:0, parallaxRAF:0
+  };
+
   const descriptions = {
     'basic-med':'인체의 구조와 기능, 병태생리와 기초 의생명과학을 다루는 서가.',
     'clin-med':'환자와 질병, 진단과 치료를 중심으로 임상의학을 읽는 서가.',
@@ -24,7 +32,18 @@
     'soc-edu':'사회와 집단, 교육과 제도의 작동 방식을 다루는 서가.',
     'culture':'교양과 취향, 생활의 기술과 처세를 가볍고 넓게 다루는 서가.'
   };
-  const categoryColors = ['#91a9c7','#8ca3bf','#829caf','#9a91bb','#a38fb5','#8fa7a0','#9b91c7','#8ea6c8','#a498bd','#b09a9d','#879fae','#a18da8'];
+
+  const categoryColors = ['#a9c7d6','#8eb4cf','#8aa7b6','#aa91c7','#a38fc0','#9db9ac','#9d91d2','#c5a373','#a8a0c8','#c89a9f','#829eb0','#bc92ae'];
+  const constellationNames = { 'Capricorn':'capricorn', 'Scorpio':'scorpio' };
+  const satellitePositions = [
+    {x:-178,y:-76,tilt:-5,dx:7,dy:-8,d:18},
+    {x:176,y:-80,tilt:5,dx:-8,dy:7,d:21},
+    {x:-218,y:34,tilt:-7,dx:9,dy:6,d:24},
+    {x:216,y:40,tilt:7,dx:-7,dy:-8,d:19},
+    {x:-132,y:112,tilt:-3,dx:6,dy:-7,d:22},
+    {x:136,y:116,tilt:4,dx:-8,dy:6,d:26}
+  ];
+
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fetchJson = async url => { const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error(`${url}: ${r.status}`); return r.json(); };
   const cyclicDistance = (a,b,n) => { const d=Math.abs(a-b); return Math.min(d,n-d); };
@@ -37,7 +56,12 @@
     const saved = localStorage.getItem('nocturne:front-category:v1');
     const fromSaved = state.categories.findIndex(x => x.slug === saved);
     state.index = fromSaved >= 0 ? fromSaved : Math.max(0,state.categories.findIndex(x => x.slug === 'philosophy'));
-    buildRing(); bind(); select(state.index, false); renderAllCategories(); renderRecentPanel(); setupStars();
+    buildRing();
+    bind();
+    setupStarLayers();
+    select(state.index, false);
+    renderAllCategories();
+    renderRecentPanel();
   }
 
   function buildRing() {
@@ -61,7 +85,8 @@
     ui.ring.classList.toggle('no-animate',!animate);
     ui.ring.style.transform=`rotateY(${state.angle}deg)`;
     requestAnimationFrame(()=>ui.ring.classList.remove('no-animate'));
-    updateVisibility(); updateFocus();
+    updateVisibility();
+    updateFocus();
     localStorage.setItem('nocturne:front-category:v1',state.categories[state.index].slug);
   }
 
@@ -78,7 +103,7 @@
     ui.dots.querySelectorAll('.ring-dot').forEach((el,i)=>el.classList.toggle('active',i===state.index));
   }
 
-  function seriesForCategory(slug) { return state.series.filter(s=>s.data.category===slug); }
+  function seriesForCategory(slug) { return state.series.filter(s=>s.data.category===slug && !['diary','journal'].includes(s.data.kind)); }
   function stampOf(s) {
     const raw=s.data.updatedAt || s.data.createdAt || s.data.publishedAt || '';
     const t=raw?Date.parse(raw):NaN;
@@ -90,43 +115,125 @@
     const cat=state.categories[state.index]; if(!cat) return;
     const items=seriesForCategory(cat.slug);
     const lectures=items.reduce((sum,s)=>sum+(s.data.lectures?.length||0),0);
-    ui.symbol.textContent='✦';
-    ui.title.textContent=cat.ko; ui.en.textContent=cat.en;
+    const accent=categoryColors[state.index % categoryColors.length];
+    document.documentElement.style.setProperty('--focus-accent',accent);
+    document.documentElement.dataset.category=cat.slug;
+    ui.title.textContent=cat.ko;
+    ui.en.textContent=cat.en;
     ui.description.textContent=cat.description || descriptions[cat.slug] || '';
-    ui.stats.textContent=`시리즈 ${items.length} · 강의 ${lectures}`;
+    ui.stats.textContent=`${items.length} books · ${lectures} lectures`;
     const shelf=`shelf.html?category=${encodeURIComponent(cat.slug)}`;
-    ui.enter.href=shelf; ui.allInShelf.href=shelf;
-    const recent=sortedRecent(items).slice(0,3);
-    ui.categorySeries.innerHTML=recent.length?recent.map(seriesCard).join(''):`<div class="empty-series">아직 이 서가에 공개된 시리즈가 없습니다.</div>`;
+    ui.enter.href=shelf;
+    renderConstellation(cat);
+    renderSatellites(items);
   }
 
-  function seriesCard(s) {
-    const cat=state.categories.find(c=>c.slug===s.data.category);
-    const count=s.data.lectures?.length||0;
-    return `<a class="series-card" href="book.html?series=${encodeURIComponent(s.data.id)}">
-      <small>${count}강</small><div><strong>${esc(s.data.title)}</strong><p>${esc(s.data.description||'')}</p></div></a>`;
+  async function renderConstellation(cat) {
+    if(!ui.constellation) return;
+    const token=++state.constellationToken;
+    const raw=(constellationNames[cat.constellation] || String(cat.constellation||'').toLowerCase()).replace(/[^a-z-]/g,'');
+    if(!raw){ ui.constellation.replaceChildren(); return; }
+    ui.constellation.classList.remove('is-visible');
+    try{
+      const r=await fetch(`assets/constellations/${raw}.svg?v=0.18.1`,{cache:'force-cache'});
+      if(!r.ok) throw new Error(`constellation ${raw}: ${r.status}`);
+      const svg=await r.text();
+      if(token!==state.constellationToken) return;
+      ui.constellation.innerHTML=svg;
+      requestAnimationFrame(()=>ui.constellation.classList.add('is-visible'));
+    }catch(err){
+      if(token===state.constellationToken) ui.constellation.replaceChildren();
+      console.warn(err);
+    }
+  }
+
+  function renderSatellites(items) {
+    if(!ui.satellites) return;
+    const withCovers=sortedRecent(items).filter(s=>s.data.cover).slice(0,6);
+    ui.satellites.innerHTML=withCovers.map((s,i)=>{
+      const p=satellitePositions[i];
+      const cover=new URL(`${s.path}/${s.data.cover}`,location.href).href;
+      return `<span class="satellite-anchor satellite-${i+1}" style="--sx:${p.x}px;--sy:${p.y}px;--tilt:${p.tilt}deg;--dx0:${(-p.dx*.45).toFixed(2)}px;--dy0:${(-p.dy*.45).toFixed(2)}px;--dx1:${p.dx}px;--dy1:${p.dy}px;--ty0:${(p.tilt*.45).toFixed(2)}deg;--ty1:${(-p.tilt*.35).toFixed(2)}deg;--tz1:${(-p.tilt*.55).toFixed(2)}deg;--drift:${p.d}s;--delay:${-i*3.1}s">
+        <a class="book-satellite" href="book.html?series=${encodeURIComponent(s.data.id)}" aria-label="${esc(s.data.title)}">
+          <img src="${esc(cover)}" alt="" loading="eager" decoding="async" onerror="this.closest('.satellite-anchor').remove()">
+          <span>${esc(s.data.title)}</span>
+        </a>
+      </span>`;
+    }).join('');
+    ui.satellites.classList.toggle('is-empty',withCovers.length===0);
   }
 
   function bind() {
-    ui.prev.addEventListener('click',()=>select(state.index-1)); ui.next.addEventListener('click',()=>select(state.index+1));
-    ui.ring.addEventListener('click',e=>{ const item=e.target.closest('.ring-item'); if(item) select(Number(item.dataset.index)); });
+    ui.prev.addEventListener('click',()=>select(state.index-1));
+    ui.next.addEventListener('click',()=>select(state.index+1));
     ui.dots.addEventListener('click',e=>{ const dot=e.target.closest('.ring-dot'); if(dot) select(Number(dot.dataset.index)); });
-    ui.scene.addEventListener('keydown',e=>{ if(e.key==='ArrowLeft'){e.preventDefault();select(state.index-1);} if(e.key==='ArrowRight'){e.preventDefault();select(state.index+1);} if(e.key==='Enter'){location.href=ui.enter.href;} });
+    ui.scene.addEventListener('keydown',e=>{
+      if(e.key==='ArrowLeft'){e.preventDefault();select(state.index-1);}
+      if(e.key==='ArrowRight'){e.preventDefault();select(state.index+1);}
+      if(e.key==='Enter'){location.href=ui.enter.href;}
+    });
     ui.scene.addEventListener('wheel',e=>{
       if(Math.abs(e.deltaY)<5 && Math.abs(e.deltaX)<5) return;
       e.preventDefault(); const now=performance.now(); if(now-state.lastWheel<180) return; state.lastWheel=now;
       const delta=Math.abs(e.deltaY)>=Math.abs(e.deltaX)?e.deltaY:e.deltaX; select(state.index+(delta>0?1:-1));
     },{passive:false});
-    ui.scene.addEventListener('pointerdown',e=>{ state.dragging=true; state.dragStartX=e.clientX; state.dragStartAngle=state.angle; ui.ring.classList.add('is-dragging'); ui.scene.setPointerCapture(e.pointerId); });
-    ui.scene.addEventListener('pointermove',e=>{ if(!state.dragging)return; const dx=e.clientX-state.dragStartX; state.angle=state.dragStartAngle+dx*.18; ui.ring.style.transform=`rotateY(${state.angle}deg)`; });
-    const endDrag=e=>{ if(!state.dragging)return; state.dragging=false; ui.ring.classList.remove('is-dragging'); const step=360/state.categories.length; const nearest=normalizedIndex(Math.round(-state.angle/step)); select(nearest); try{ui.scene.releasePointerCapture(e.pointerId);}catch{} };
-    ui.scene.addEventListener('pointerup',endDrag); ui.scene.addEventListener('pointercancel',endDrag);
+    ui.scene.addEventListener('pointerdown',e=>{
+      const item=e.target.closest('.ring-item');
+      state.dragging=true; state.dragMoved=false; state.dragStartIndex=item?Number(item.dataset.index):-1;
+      state.dragStartX=e.clientX; state.dragStartAngle=state.angle;
+      ui.ring.classList.add('is-dragging');
+      ui.scene.setPointerCapture(e.pointerId);
+    });
+    ui.scene.addEventListener('pointermove',e=>{
+      if(!state.dragging)return;
+      const dx=e.clientX-state.dragStartX;
+      if(Math.abs(dx)>6) state.dragMoved=true;
+      state.angle=state.dragStartAngle+dx*.18;
+      ui.ring.style.transform=`rotateY(${state.angle}deg)`;
+    });
+    const endDrag=e=>{
+      if(!state.dragging)return;
+      const wasTap=!state.dragMoved && state.dragStartIndex>=0;
+      const tapIndex=state.dragStartIndex;
+      state.dragging=false; state.dragStartIndex=-1;
+      ui.ring.classList.remove('is-dragging');
+      try{ui.scene.releasePointerCapture(e.pointerId);}catch{}
+      if(wasTap){
+        const cat=state.categories[tapIndex];
+        if(cat){ location.href=`shelf.html?category=${encodeURIComponent(cat.slug)}`; return; }
+      }
+      const step=360/state.categories.length;
+      const nearest=normalizedIndex(Math.round(-state.angle/step));
+      select(nearest);
+    };
+    ui.scene.addEventListener('pointerup',endDrag);
+    ui.scene.addEventListener('pointercancel',e=>{ state.dragMoved=true; endDrag(e); });
+
     document.querySelectorAll('[data-open-panel]').forEach(b=>b.addEventListener('click',()=>openPanel(b.dataset.openPanel)));
     document.querySelectorAll('[data-open-portal]').forEach(b=>b.addEventListener('click',()=>openPortal(b.dataset.openPortal)));
     document.querySelectorAll('[data-close-portal]').forEach(b=>b.addEventListener('click',closePortal));
     document.querySelectorAll('[data-close-panel]').forEach(b=>b.addEventListener('click',closePanel));
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!ui.panel.hidden)closePanel(); if(ui.portal && !ui.portal.hidden)closePortal(); } });
     ui.search.addEventListener('input',renderSearch);
+
+    if(matchMedia('(pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches){
+      addEventListener('pointermove',handleParallax,{passive:true});
+      addEventListener('pointerleave',()=>setParallax(0,0),{passive:true});
+    }
+  }
+
+  function handleParallax(e){
+    if(state.parallaxRAF) return;
+    const nx=(e.clientX/innerWidth-.5)*2;
+    const ny=(e.clientY/innerHeight-.5)*2;
+    state.parallaxRAF=requestAnimationFrame(()=>{state.parallaxRAF=0;setParallax(nx,ny);});
+  }
+  function setParallax(nx,ny){
+    const root=document.documentElement.style;
+    root.setProperty('--mid-x',`${(-nx*3).toFixed(2)}px`);
+    root.setProperty('--mid-y',`${(-ny*3).toFixed(2)}px`);
+    root.setProperty('--near-x',`${(-nx*7).toFixed(2)}px`);
+    root.setProperty('--near-y',`${(-ny*7).toFixed(2)}px`);
   }
 
   function openPanel(view) {
@@ -173,19 +280,61 @@
   }
 
   function renderRecentPanel() {
-    const recent=sortedRecent(state.series).slice(0,12);
+    const recent=sortedRecent(state.series.filter(s => !['diary','journal'].includes(s.data.kind))).slice(0,12);
     ui.recentResults.innerHTML=recent.map(s=>{const c=state.categories.find(x=>x.slug===s.data.category);return `<a class="result-row" href="book.html?series=${encodeURIComponent(s.data.id)}"><small>${esc(c?.ko||'')}</small><strong>${esc(s.data.title)}</strong><span>${s.data.lectures?.length||0}강</span></a>`}).join('') || '<div class="empty-series">아직 등록된 시리즈가 없습니다.</div>';
   }
+
   function renderAllCategories() {
     ui.allCategories.innerHTML=state.categories.map((c,i)=>`<a class="category-mini" href="shelf.html?category=${encodeURIComponent(c.slug)}"><small>${String(i+1).padStart(2,'0')}</small><strong>${esc(c.ko)}</strong></a>`).join('');
   }
 
-  function setupStars() {
-    const canvas=ui.starCanvas, ctx=canvas.getContext('2d'); if(!ctx)return;
-    let stars=[]; const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const resize=()=>{const d=Math.min(devicePixelRatio||1,2);canvas.width=innerWidth*d;canvas.height=innerHeight*d;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(d,0,0,d,0,0);stars=Array.from({length:Math.min(130,Math.floor(innerWidth*innerHeight/11000))},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:.35+Math.random()*1.15,a:.15+Math.random()*.55,p:Math.random()*Math.PI*2,s:.002+Math.random()*.006}));};
-    const draw=t=>{ctx.clearRect(0,0,innerWidth,innerHeight);for(const s of stars){const a=reduce?s.a:s.a*(.72+.28*Math.sin(t*s.s+s.p));ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle=`rgba(210,215,235,${a})`;ctx.fill();}requestAnimationFrame(draw);};
-    addEventListener('resize',resize);resize();requestAnimationFrame(draw);
+  function setupStarLayers() {
+    const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const coarse=matchMedia('(pointer:coarse)').matches;
+    const dpr=Math.min(devicePixelRatio||1,1.5);
+
+    function draw(canvas,count,minR,maxR,minA,maxA){
+      if(!canvas) return;
+      const ctx=canvas.getContext('2d'); if(!ctx) return;
+      canvas.width=Math.max(1,Math.floor(innerWidth*dpr));
+      canvas.height=Math.max(1,Math.floor(innerHeight*dpr));
+      canvas.style.width=innerWidth+'px'; canvas.style.height=innerHeight+'px';
+      ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,innerWidth,innerHeight);
+      let seed=1337 + count;
+      const rand=()=>{ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; };
+      for(let i=0;i<count;i++){
+        const x=rand()*innerWidth, y=rand()*innerHeight;
+        const r=minR+rand()*(maxR-minR), a=minA+rand()*(maxA-minA);
+        ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(217,230,245,${a.toFixed(3)})`; ctx.fill();
+      }
+    }
+
+    const redraw=()=>{
+      const area=innerWidth*innerHeight;
+      const far=Math.min(coarse?125:230,Math.max(70,Math.floor(area/(coarse?9000:6500))));
+      const mid=Math.min(coarse?38:78,Math.max(24,Math.floor(area/(coarse?26000:19000))));
+      draw(ui.farStars,far,.35,1.05,.12,.50);
+      draw(ui.midStars,mid,.55,1.5,.18,.62);
+      renderNearStars(coarse?8:14,reduce);
+    };
+    addEventListener('resize',redraw,{passive:true});
+    redraw();
   }
-  boot().catch(err=>{console.error(err);document.body.insertAdjacentHTML('beforeend',`<pre style="position:fixed;left:20px;bottom:20px;color:#e8a7b4">${esc(err.message)}</pre>`);});
+
+  function renderNearStars(count,reduce){
+    if(!ui.nearStars) return;
+    let seed=90817;
+    const rand=()=>{ seed=(seed*1103515245+12345) & 0x7fffffff; return seed/0x80000000; };
+    ui.nearStars.innerHTML=Array.from({length:count},(_,i)=>{
+      const x=(3+rand()*94).toFixed(2), y=(4+rand()*90).toFixed(2), size=(1.1+rand()*1.5).toFixed(2);
+      const dur=(7+rand()*8).toFixed(1), delay=(-rand()*10).toFixed(1), alpha=(.24+rand()*.42).toFixed(2);
+      return `<i style="left:${x}%;top:${y}%;width:${size}px;height:${size}px;--a:${alpha};--a0:${(Number(alpha)*.58).toFixed(2)};--tw:${reduce?'0s':dur+'s'};--td:${delay}s"></i>`;
+    }).join('');
+  }
+
+  boot().catch(err=>{
+    console.error(err);
+    document.body.insertAdjacentHTML('beforeend',`<pre style="position:fixed;left:20px;bottom:20px;color:#e8a7b4">${esc(err.message)}</pre>`);
+  });
 })();

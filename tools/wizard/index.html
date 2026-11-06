@@ -32,7 +32,7 @@
       <div class="editor-toolbar">
         <div class="field compact"><label>카테고리</label><select id="categorySelect"></select></div>
         <div class="field series-field"><label>시리즈</label><select id="seriesSelect"></select></div>
-        <button id="editSeriesBtn" class="ghost">책 정보</button><button id="newPrologueBtn" class="ghost">＋ 프롤로그</button><button id="newLectureBtn" class="ghost">＋ 새 강의</button>
+        <button id="editSeriesBtn" class="ghost">책 정보</button><button id="newPrologueBtn" class="ghost">＋ 프롤로그</button><button id="newLectureBtn" class="ghost">＋ 새 강의</button><button id="deleteLectureBtn" class="ghost danger" disabled>강의 삭제</button>
       </div>
 
       <div id="modeBanner" class="mode-banner">새 강의</div>
@@ -45,7 +45,7 @@
 
       <div class="paste-head">
         <div><span class="eyebrow">SOURCE</span><h2>Nocturne 강의</h2></div>
-        <div class="source-actions"><button id="replaceToolBtn" class="ghost">문자열 정리</button><button id="stripBoldBtn" class="ghost">** 제거</button><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
+        <div class="source-actions"><button id="replaceToolBtn" class="ghost">문자열 정리</button><button id="stripLinksBtn" class="ghost">링크 제거</button><button id="stripBoldBtn" class="ghost">** 제거</button><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
       </div>
       <textarea id="sourceInput" spellcheck="false" placeholder="# 강의 제목\n\n[[NORMAL]]\n...\n[[END]]"></textarea>
 
@@ -76,7 +76,7 @@
   <dialog id="seriesDialog">
     <form method="dialog" id="seriesForm" class="dialog-form">
       <div class="section-head"><div><span class="eyebrow">NEW SERIES</span><h2>새 시리즈</h2></div><button value="cancel" class="icon-btn">×</button></div>
-      <div class="field"><label>카테고리</label><select id="newSeriesCategory"></select></div>
+      <div class="field" id="newSeriesCategoryField"><label>카테고리</label><select id="newSeriesCategory"></select><small class="field-help">강의 시리즈에만 사용됩니다.</small></div>
       <div class="field"><label>Series ID</label><input id="newSeriesId" placeholder="topology-theology" required></div>
       <div class="field"><label>제목</label><input id="newSeriesTitle" required></div>
       <div class="field"><label>설명</label><textarea id="newSeriesDescription" rows="3"></textarea></div>

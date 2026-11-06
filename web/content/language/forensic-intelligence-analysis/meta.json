@@ -1,12 +1,37 @@
 {
   "schemaVersion": 1,
   "id": "forensic-intelligence-analysis",
-  "title": "말은 무엇을 누설하는가: 텍스트·행동·정보의 추론학",
+  "title": "말은 무엇을 누설하는가 : 텍스트·행동·정보의 추론학",
   "category": "language",
-  "description": "",
+  "description": "사람이 남긴 말과 행동의 작은 흔적에서 무엇까지 추론할 수 있으며, 어디에서 멈추어야 하는지를 탐구한다.",
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-11-05",
-  "updatedAt": "2026-11-05",
-  "lectures": []
+  "updatedAt": "2026-11-06",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 사라진 장서와 익명의 메모 — 문장은 작성자를 얼마나 드러내는가"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 사라진 37분 — 진술의 공백은 거짓말인가"
+    }
+  ],
+  "dialogueSpeakers": {
+    "A": {
+      "name": "A",
+      "thumbnail": "",
+      "side": "left"
+    },
+    "B": {
+      "name": "B",
+      "thumbnail": "",
+      "side": "right"
+    }
+  },
+  "prologue": "사람은 생각보다 많은 것을 흘리고 다닌다. \n한 문장의 어미에는 관계가 묻고, 답변까지 걸린 시간에는 망설임이 남으며, 무엇을 말했는지만큼 무엇을 굳이 말하지 않았는지도 정보를 품는다. \n\n그러나 흔적이 곧 진실은 아니다. \n같은 침묵은 무관심일 수도, 계산일 수도, 단지 피곤함일 수도 있다. \n\n추론의 묘미는 숨은 마음을 꿰뚫어 보는 데 있지 않다. \n보이는 증거로부터 가능한 세계들을 세우고, 하나씩 버리되 증거가 허락하는 곳에서 정확히 멈추는 데 있다.",
+  "cover": "assets/cover.png"
 }

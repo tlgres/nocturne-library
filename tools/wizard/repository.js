@@ -175,11 +175,12 @@
 
     async createSeries(data) {
       const id = String(data.id || '').trim();
+      const kind = ['diary','journal'].includes(data.kind) ? data.kind : 'lecture';
       const category = String(data.category || '').trim();
       if (!/^[a-z0-9][a-z0-9-]*$/.test(id)) throw new Error('Series ID는 영문 소문자/숫자/하이픈만 사용하는 것을 권장합니다.');
-      if (!this.categories.some(x => x.slug === category)) throw new Error('알 수 없는 카테고리입니다.');
+      if (kind === 'lecture' && !this.categories.some(x => x.slug === category)) throw new Error('알 수 없는 카테고리입니다.');
       if (this.series.some(x => x.meta?.id === id)) throw new Error('같은 Series ID가 이미 있습니다.');
-      const baseRel = `content/${category}/${id}`;
+      const baseRel = kind === 'lecture' ? `content/${category}/${id}` : `content/${kind}/${id}`;
       const base = `web/${baseRel}`;
       await this.getDirectory(base, true);
       const today = new Date().toISOString().slice(0, 10);
@@ -187,17 +188,18 @@
         schemaVersion: 1,
         id,
         title: String(data.title || id).trim(),
-        category,
+        category: kind === 'lecture' ? category : undefined,
         description: String(data.description || '').trim(),
         prologue: String(data.prologue || '').trim() || undefined,
         language: 'ko',
         status: 'ongoing',
-        kind: data.kind && data.kind !== 'lecture' ? data.kind : undefined,
+        kind: kind !== 'lecture' ? kind : undefined,
         createdAt: today,
         updatedAt: today,
         lectures: []
       };
       if (!meta.kind) delete meta.kind;
+      if (!meta.category) delete meta.category;
       if (!meta.prologue) delete meta.prologue;
       await this.writeJson(`${base}/meta.json`, meta);
       this.library.series = this.library.series || [];
@@ -222,7 +224,7 @@
       const today = new Date().toISOString().slice(0, 10);
       let entry = existingId ? series.meta.lectures.find(x => x.id === existingId) : null;
       if (!entry) {
-        entry = { id: lectureId, file: filename, title: String(title || lectureId).trim() };
+        entry = { id: lectureId, file: filename, title: String(title || lectureId).trim(), createdAt: today };
         if (lectureId === '00') series.meta.lectures.unshift(entry);
         else series.meta.lectures.push(entry);
       } else {
@@ -230,9 +232,27 @@
         entry.file = filename;
         entry.title = String(title || lectureId).trim();
       }
+      entry.updatedAt = today;
+      entry.characters = source.trim().length;
+      entry.readMinutes = Math.max(1, Math.ceil(entry.characters / 550));
       series.meta.updatedAt = today;
       if (!series.meta.createdAt) series.meta.createdAt = today;
       if (dialogueSpeakers && Object.keys(dialogueSpeakers).length) series.meta.dialogueSpeakers = dialogueSpeakers;
+      await this.writeJson(`${series.base}/meta.json`, series.meta);
+      await this.reload();
+      return this.getSeriesById(series.meta.id);
+    }
+
+
+    async deleteLecture(series, lectureId) {
+      if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
+      const index = (series.meta.lectures || []).findIndex(x => String(x.id) === String(lectureId));
+      if (index < 0) throw new Error('삭제할 강의를 찾지 못했습니다.');
+      const lecture = series.meta.lectures[index];
+      const dir = await this.getDirectory(series.base, false);
+      await dir.removeEntry(lecture.file);
+      series.meta.lectures.splice(index, 1);
+      series.meta.updatedAt = new Date().toISOString().slice(0, 10);
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
       return this.getSeriesById(series.meta.id);
