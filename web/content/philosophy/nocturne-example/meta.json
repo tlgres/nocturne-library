@@ -6,6 +6,21 @@
   "description": "Nocturne Format 1.0과 1차 웹 Reader를 확인하기 위한 예제 시리즈.",
   "language": "ko",
   "status": "ongoing",
-  "lectures": [],
-  "updatedAt": "2026-11-06"
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "TITLE",
+      "createdAt": "2026-11-08",
+      "updatedAt": "2026-11-08",
+      "characters": 1041,
+      "readMinutes": 2,
+      "video": {
+        "type": "youtube",
+        "url": "https://youtu.be/MICksKeZoJU?si=WbqHm6n5xyQ-X3-7"
+      }
+    }
+  ],
+  "updatedAt": "2026-11-08",
+  "createdAt": "2026-11-08"
 }

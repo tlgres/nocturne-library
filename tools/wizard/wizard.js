@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','insertImageBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','lectureVideoUrl','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','insertImageBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -66,6 +66,7 @@
     state.speakerDrafts = {};
     el.modeBanner.textContent = '새 강의'; el.modeBanner.dataset.mode = 'new';
     el.lectureTitle.value = ''; suggestLecture();
+    if (el.lectureVideoUrl) el.lectureVideoUrl.value = '';
     if (clearSource) el.sourceInput.value = '';
     if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = true;
     analyze();
@@ -84,6 +85,7 @@
     el.lectureTitle.value = '프롤로그';
     el.lectureId.value = '00';
     el.lectureFile.value = '00.md';
+    if (el.lectureVideoUrl) el.lectureVideoUrl.value = '';
     el.sourceInput.value = `# 프롤로그\n\n[[NORMAL]]\n\n[[END]]\n`;
     analyze();
     el.sourceInput.focus();
@@ -99,6 +101,7 @@
     el.modeBanner.textContent = `기존 강의 수정 · ${lecture.id}`; el.modeBanner.dataset.mode = 'edit';
     el.lectureTitle.value = lecture.title || '';
     el.lectureId.value = lecture.id; el.lectureFile.value = lecture.file;
+    if (el.lectureVideoUrl) el.lectureVideoUrl.value = typeof lecture.video === 'string' ? lecture.video : (lecture.video?.url || '');
     el.sourceInput.value = text;
     state.speakerDrafts = structuredClone(series.meta.dialogueSpeakers || {});
     if (el.deleteLectureBtn) el.deleteLectureBtn.disabled = false;
@@ -182,7 +185,7 @@
     try {
       analyze(); if (!state.validation?.valid) throw new Error('ERROR를 먼저 수정하세요.');
       const seriesBefore = state.series;
-      const result = await repo.saveLecture({ series:seriesBefore, id:el.lectureId.value, file:el.lectureFile.value, title:el.lectureTitle.value || state.validation.parsed.title, source:el.sourceInput.value, dialogueSpeakers:state.speakerDrafts, existingId:state.existingLecture?.id || null });
+      const result = await repo.saveLecture({ series:seriesBefore, id:el.lectureId.value, file:el.lectureFile.value, title:el.lectureTitle.value || state.validation.parsed.title, source:el.sourceInput.value, dialogueSpeakers:state.speakerDrafts, videoUrl:el.lectureVideoUrl?.value || '', existingId:state.existingLecture?.id || null });
       state.series = result;
       state.existingLecture = result.meta.lectures.find(x => x.id === el.lectureId.value) || null;
       el.modeBanner.textContent = `저장됨 · ${el.lectureId.value}`; el.modeBanner.dataset.mode = 'saved';

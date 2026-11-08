@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.20.0">
+  <link rel="stylesheet" href="styles.css?v=0.21.0">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
@@ -96,6 +96,17 @@
         </div>
         <div class="wood-floor" aria-hidden="true"></div>
         <div id="stage-status" class="stage-status">NORMAL</div>
+        <div id="stage-view-tabs" class="stage-view-tabs" hidden>
+          <button id="stage-view-companions" type="button" data-stage-view="companions">Companions</button>
+          <button id="stage-view-video" type="button" data-stage-view="video">Video</button>
+        </div>
+
+        <section id="stage-video-panel" class="stage-video-panel" hidden aria-label="강의 보조 영상">
+          <div class="stage-video-frame">
+            <iframe id="stage-video-frame" title="강의 보조 YouTube 영상" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+          </div>
+          <div class="stage-video-meta"><span>LECTURE VIDEO</span><a id="stage-video-open" href="#" target="_blank" rel="noopener noreferrer">YouTube에서 열기 ↗</a></div>
+        </section>
 
         <div id="char-mute" class="character-layer mute is-listener">
           <canvas id="char-mute-canvas" class="character-canvas" data-character-canvas="MUTE"></canvas>
@@ -152,8 +163,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="core.js?v=0.20.0"></script>
-  <script src="character.js?v=0.20.0"></script>
-  <script src="app.js?v=0.20.0"></script>
+  <script src="core.js?v=0.21.0"></script>
+  <script src="character.js?v=0.21.0"></script>
+  <script src="app.js?v=0.21.0"></script>
 </body>
 </html>

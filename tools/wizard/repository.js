@@ -55,6 +55,22 @@
     return (await handle.requestPermission(opts)) === 'granted';
   }
 
+  function normalizeYoutubeUrl(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return '';
+    let url;
+    try { url = new URL(value); } catch { throw new Error('YouTube URL 형식이 올바르지 않습니다.'); }
+    const host = url.hostname.toLowerCase().replace(/^www\./,'');
+    let id = '';
+    if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] || '';
+    else if (['youtube.com','m.youtube.com','music.youtube.com','youtube-nocookie.com'].includes(host)) {
+      if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+      else { const parts = url.pathname.split('/').filter(Boolean); if (['embed','shorts','live'].includes(parts[0])) id = parts[1] || ''; }
+    }
+    if (!/^[A-Za-z0-9_-]{6,20}$/.test(id)) throw new Error('지원되는 YouTube 영상 URL을 입력하세요.');
+    return value;
+  }
+
   class Repository {
     constructor() {
       this.root = null;
@@ -241,7 +257,7 @@
       return this.getSeriesById(id);
     }
 
-    async saveLecture({ series, id, file, title, source, dialogueSpeakers, existingId = null }) {
+    async saveLecture({ series, id, file, title, source, dialogueSpeakers, videoUrl = '', existingId = null }) {
       if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
       const lectureId = String(id || '').trim();
       const filename = String(file || '').trim();
@@ -267,6 +283,9 @@
       entry.updatedAt = today;
       entry.characters = source.trim().length;
       entry.readMinutes = Math.max(1, Math.ceil(entry.characters / 550));
+      const normalizedVideoUrl = normalizeYoutubeUrl(videoUrl);
+      if (normalizedVideoUrl) entry.video = { type:'youtube', url:normalizedVideoUrl };
+      else delete entry.video;
       series.meta.updatedAt = today;
       if (!series.meta.createdAt) series.meta.createdAt = today;
       if (dialogueSpeakers && Object.keys(dialogueSpeakers).length) series.meta.dialogueSpeakers = dialogueSpeakers;

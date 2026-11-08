@@ -17,6 +17,7 @@
     fontSelect: $('reader-font-select'), customFontWrap: $('reader-custom-font-wrap'), customFont: $('reader-custom-font'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
     lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), alignSelect: $('reader-align-select'), widthSelect: $('reader-width-select'), paragraphSelect: $('reader-paragraph-select'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
     messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
+    stageViewTabs:$('stage-view-tabs'), stageViewCompanions:$('stage-view-companions'), stageViewVideo:$('stage-view-video'), videoPanel:$('stage-video-panel'), videoFrame:$('stage-video-frame'), videoOpen:$('stage-video-open'),
     searchDialog:$('study-search-dialog'), searchClose:$('study-search-close'), searchInput:$('study-search-input'), searchScope:$('study-search-scope'), searchSummary:$('study-search-summary'), searchResults:$('study-search-results'), searchPager:$('study-search-pager'),
     lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption')
   };
@@ -28,7 +29,8 @@
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
-    prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'}
+    prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'},
+    stageView:'companions', lectureVideo:null, videoEmbedUrl:''
   };
 
   function loadPrefs() {
@@ -433,6 +435,91 @@
     return `<div class="quiz-sequence" data-quiz-count="${current.items.length}" data-quiz-index="${current.index}">${card}${controls}</div>`;
   }
 
+  function parseYoutubeVideo(raw) {
+    const value = String(raw || '').trim();
+    if (!value) return null;
+    try {
+      const url = new URL(value);
+      const host = url.hostname.toLowerCase().replace(/^www\./,'');
+      let id = '';
+      if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] || '';
+      else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com' || host === 'youtube-nocookie.com') {
+        if (url.pathname === '/watch') id = url.searchParams.get('v') || '';
+        else {
+          const parts = url.pathname.split('/').filter(Boolean);
+          if (['embed','shorts','live'].includes(parts[0])) id = parts[1] || '';
+        }
+      }
+      if (!/^[A-Za-z0-9_-]{6,20}$/.test(id)) return null;
+      let start = url.searchParams.get('start') || url.searchParams.get('t') || '';
+      if (/^\d+$/.test(start)) start = Number(start);
+      else if (start) {
+        const m = String(start).match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/i);
+        start = m ? (Number(m[1]||0)*3600 + Number(m[2]||0)*60 + Number(m[3]||0)) : 0;
+      } else start = 0;
+      const embed = new URL(`https://www.youtube-nocookie.com/embed/${id}`);
+      embed.searchParams.set('rel','0');
+      embed.searchParams.set('enablejsapi','1');
+      if (start > 0) embed.searchParams.set('start', String(start));
+      return { id, url:value, embed:embed.toString() };
+    } catch { return null; }
+  }
+
+  function lectureVideoForCurrent() {
+    const lecture = state.meta?.lectures?.[state.lectureIndex];
+    const video = lecture?.video;
+    if (!video) return null;
+    if (typeof video === 'string') return parseYoutubeVideo(video);
+    if (video.type && video.type !== 'youtube') return null;
+    return parseYoutubeVideo(video.url || '');
+  }
+
+  function syncStageView() {
+    const hasVideo = !!state.lectureVideo;
+    if (!hasVideo) state.stageView = 'companions';
+    if (ui.stageViewTabs) ui.stageViewTabs.hidden = !hasVideo;
+    if (ui.stageViewCompanions) ui.stageViewCompanions.classList.toggle('selected', state.stageView === 'companions');
+    if (ui.stageViewVideo) ui.stageViewVideo.classList.toggle('selected', state.stageView === 'video');
+    if (ui.videoPanel) ui.videoPanel.hidden = !(hasVideo && state.stageView === 'video');
+    document.body.classList.toggle('video-stage-active', hasVideo && state.stageView === 'video');
+    if (ui.stage) ui.stage.classList.toggle('video-view', hasVideo && state.stageView === 'video');
+  }
+
+  function configureLectureVideo() {
+    state.lectureVideo = lectureVideoForCurrent();
+    state.videoEmbedUrl = state.lectureVideo?.embed || '';
+    state.stageView = state.lectureVideo ? 'video' : 'companions';
+    if (ui.videoFrame) {
+      if (state.videoEmbedUrl) {
+        if (ui.videoFrame.src !== state.videoEmbedUrl) ui.videoFrame.src = state.videoEmbedUrl;
+      } else {
+        ui.videoFrame.removeAttribute('src');
+      }
+    }
+    if (ui.videoOpen) {
+      ui.videoOpen.href = state.lectureVideo?.url || '#';
+      ui.videoOpen.hidden = !state.lectureVideo;
+    }
+    syncStageView();
+  }
+
+  function pauseLectureVideo() {
+    try { ui.videoFrame?.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*'); } catch (_) {}
+  }
+
+  function setStageView(view) {
+    if (view === 'video' && !state.lectureVideo) return;
+    const next = view === 'video' ? 'video' : 'companions';
+    if (state.stageView === 'video' && next !== 'video') pauseLectureVideo();
+    state.stageView = next;
+    if (next === 'companions' && state.prefs.interactionMode !== 'companions') {
+      state.prefs.interactionMode = 'companions'; savePrefs(); applyPrefs();
+    }
+    syncStageView();
+    renderStage(state.slides[state.sectionIndex]);
+    bindStageEvents();
+  }
+
   function clearInteractionSurfaces() {
     [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].forEach(el => { if(el){el.innerHTML='';el.hidden=true;} });
     if (ui.messageDock) ui.messageDock.hidden = true;
@@ -442,18 +529,40 @@
     if (!ui.stage) return;
     const mode = state.prefs.interactionMode || 'companions';
     const primaryType = slide?.primary?.type || 'normal';
+    syncStageView();
+    const videoActive = !!state.lectureVideo && state.stageView === 'video';
+    const extras = slide?.extras || [];
+    const castState = mode === 'quiet' ? {item:null} : currentCastFor(slide);
+    const castVisible = !!castState.item;
+    const hasQuiz = mode !== 'quiet' && !castVisible && extras.some(x => x.type === 'quiz');
+    const hasCast = mode !== 'quiet' && castVisible;
+    const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
+    const castMarkup = hasCast ? castSequenceHtml(slide) : '';
+
+    if (videoActive) {
+      if (ui.quizMessage) { ui.quizMessage.innerHTML=''; ui.quizMessage.hidden=true; }
+      if (ui.castMessage) { ui.castMessage.innerHTML=''; ui.castMessage.hidden=true; }
+      if (mode === 'quiet') {
+        if (ui.messageQuiz) { ui.messageQuiz.innerHTML=''; ui.messageQuiz.hidden=true; }
+        if (ui.messageCast) { ui.messageCast.innerHTML=''; ui.messageCast.hidden=true; }
+        if (ui.messageDock) ui.messageDock.hidden = true;
+      } else {
+        if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
+        if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
+        if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
+        if (ui.messageDock) ui.messageDock.hidden = !(quizMarkup || castMarkup);
+      }
+      ui.stage.dataset.blockType = 'video';
+      if (ui.stageStatus) ui.stageStatus.textContent = 'VIDEO';
+      state.animators.MUTE?.stop(); state.animators.ED?.stop();
+      return;
+    }
+
     if (mode === 'quiet') {
       clearInteractionSurfaces();
       state.animators.MUTE?.stop(); state.animators.ED?.stop();
       return;
     }
-    const extras = slide?.extras || [];
-    const castState = currentCastFor(slide);
-    const castVisible = !!castState.item;
-    const hasQuiz = !castVisible && extras.some(x => x.type === 'quiz');
-    const hasCast = castVisible;
-    const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
-    const castMarkup = hasCast ? castSequenceHtml(slide) : '';
 
     if (mode === 'messages') {
       if (ui.quizMessage) { ui.quizMessage.innerHTML=''; ui.quizMessage.hidden=true; }
@@ -582,6 +691,7 @@
     state.doc = Core.parseDocument(source, {allowedSpeakers:['MUTE','ED']});
     state.dialogueSideMap = new Map();
     state.slides = buildSlides(state.doc.blocks);
+    configureLectureVideo();
     ui.notice.hidden = true;
     ui.lectureIndex.textContent = `Lecture ${String(state.lectureIndex + 1).padStart(2,'0')} · ${state.meta.lectures.length}`;
     ui.lectureTitle.textContent = state.doc.title || lecture.title || state.meta.title;
@@ -835,6 +945,8 @@
   ui.lightbox?.addEventListener('click',e=>{if(e.target===ui.lightbox)ui.lightbox.close();});
   ui.immersiveToggle?.addEventListener('click', () => updatePrefs({immersive: !state.prefs.immersive}));
   ui.companionToggle?.addEventListener('click', () => { const order=['companions','messages','quiet']; const current=order.indexOf(state.prefs.interactionMode); const next=order[(current+1)%order.length]; updatePrefs({interactionMode:next}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });
+  ui.stageViewCompanions?.addEventListener('click', () => setStageView('companions'));
+  ui.stageViewVideo?.addEventListener('click', () => setStageView('video'));
   ui.settingsToggle?.addEventListener('click', () => {
     const nextHidden = !ui.settingsPanel.hidden;
     ui.settingsPanel.hidden = nextHidden;
