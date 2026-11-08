@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-10-29",
-  "updatedAt": "2026-11-07",
+  "updatedAt": "2026-11-08",
   "lectures": [
     {
       "id": "01",
@@ -211,8 +211,8 @@
       "file": "32.md",
       "title": "32강. 피부과 — 보고, 긁고, 비추고, 떼어내고, 잘라낸다",
       "createdAt": "2026-11-07",
-      "updatedAt": "2026-11-07",
-      "characters": 21530,
+      "updatedAt": "2026-11-08",
+      "characters": 21531,
       "readMinutes": 40
     }
   ],

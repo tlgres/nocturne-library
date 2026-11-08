@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>해체된 의미의 서재 · Authoring Wizard</title>
-  <link rel="stylesheet" href="wizard.css">
+  <link rel="stylesheet" href="wizard.css?v=0.19.0">
 </head>
 <body>
   <header class="topbar">
@@ -45,7 +45,7 @@
 
       <div class="paste-head">
         <div><span class="eyebrow">SOURCE</span><h2>Nocturne 강의</h2></div>
-        <div class="source-actions"><button id="replaceToolBtn" class="ghost">문자열 정리</button><button id="stripLinksBtn" class="ghost">링크 제거</button><button id="stripBoldBtn" class="ghost">** 제거</button><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
+        <div class="source-actions"><button id="insertImageBtn" class="ghost">이미지 삽입</button><button id="replaceToolBtn" class="ghost">문자열 정리</button><button id="stripLinksBtn" class="ghost">링크 제거</button><button id="stripBoldBtn" class="ghost">** 제거</button><button id="analyzeBtn" class="ghost">다시 분석</button><button id="clearBtn" class="ghost danger">비우기</button></div>
       </div>
       <textarea id="sourceInput" spellcheck="false" placeholder="# 강의 제목\n\n[[NORMAL]]\n...\n[[END]]"></textarea>
 
@@ -101,10 +101,10 @@
   </dialog>
 
   <script src="../../web/core.js"></script>
-  <script src="repository.js"></script>
-  <script src="validator.js"></script>
-  <script src="preview.js"></script>
-  <script src="wizard.js"></script>
+  <script src="repository.js?v=0.19.0"></script>
+  <script src="validator.js?v=0.19.0"></script>
+  <script src="preview.js?v=0.19.0"></script>
+  <script src="wizard.js?v=0.19.0"></script>
 
   <dialog id="replaceDialog">
     <form method="dialog" class="dialog-form" id="replaceForm">

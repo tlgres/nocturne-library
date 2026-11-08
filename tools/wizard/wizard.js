@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','insertImageBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -253,6 +253,24 @@
     el.newPrologueBtn.addEventListener('click', beginPrologue);
     el.newSeriesBtn.addEventListener('click', () => { if (!repo.root) return setMessage('먼저 Repository를 선택하세요.', 'error'); el.newSeriesKind.value='lecture'; const desired=repo.categories.some(c=>c.slug===el.categorySelect.value)?el.categorySelect.value:repo.categories[0]?.slug; el.newSeriesCategory.value=desired||''; el.newSeriesCategory.disabled=false; el.newSeriesCategoryField?.classList.remove('is-disabled'); el.seriesDialog.showModal(); });
     el.createSeriesBtn.addEventListener('click', createSeries);
+    el.insertImageBtn.addEventListener('click', async () => {
+      if (!state.series) return setMessage('시리즈를 먼저 선택하세요.', 'error');
+      try {
+        const [handle] = await showOpenFilePicker({ multiple:false, types:[{ description:'Lecture image', accept:{ 'image/*':['.png','.jpg','.jpeg','.webp','.gif','.avif'] } }] });
+        const file = await handle.getFile();
+        const path = await repo.saveLectureImageAsset(state.series, file);
+        const altDefault = String(file.name || 'image').replace(/\.[^.]+$/, '');
+        const alt = prompt('이미지 설명/캡션을 입력하세요.', altDefault);
+        if (alt === null) return;
+        const snippet = `\n\n![${String(alt).replace(/\]/g, '\\]')}](${path})\n\n`;
+        const start = el.sourceInput.selectionStart ?? el.sourceInput.value.length;
+        const end = el.sourceInput.selectionEnd ?? start;
+        el.sourceInput.setRangeText(snippet, start, end, 'end');
+        analyze();
+        el.sourceInput.focus();
+        setMessage(`이미지 저장 및 Markdown 삽입: ${path}`, 'ok');
+      } catch (err) { if (err.name !== 'AbortError') setMessage(err.message, 'error'); }
+    });
     el.analyzeBtn.addEventListener('click', analyze);
     el.clearBtn.addEventListener('click', () => { if (el.sourceInput.value && !confirm('붙여넣은 강의를 비울까요?')) return; el.sourceInput.value=''; el.lectureTitle.value=''; analyze(); });
     el.stripLinksBtn.addEventListener('click', () => {

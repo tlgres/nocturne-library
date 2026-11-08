@@ -13,25 +13,30 @@
     stage: $('character-stage'), stageStatus: $('stage-status'), quizMessage: $('quiz-message'),
     castMessage: $('cast-message'),
     muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas'),
-    immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
+    searchToggle: $('study-search-toggle'), immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
     fontSelect: $('reader-font-select'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
-    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset')
+    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
+    messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
+    searchDialog:$('study-search-dialog'), searchClose:$('study-search-close'), searchInput:$('study-search-input'), searchScope:$('study-search-scope'), searchSummary:$('study-search-summary'), searchResults:$('study-search-results'), searchPager:$('study-search-pager'),
+    lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption')
   };
 
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
   const PREF_KEY = 'nocturne:webprefs:v1';
   const DIALOGUE_MODE_KEY = 'nocturne:dialogue-mode:v1';
-  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, companions:true, showLinks:true };
+  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, interactionMode:'companions', showLinks:true };
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
-    prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false
+    prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'}
   };
 
   function loadPrefs() {
     try {
       const saved = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
       state.prefs = {...DEFAULT_PREFS, ...saved};
+      if (!saved.interactionMode && saved.companions === false) state.prefs.interactionMode = 'quiet';
+      else if (!saved.interactionMode && saved.companions === true) state.prefs.interactionMode = 'companions';
     } catch { state.prefs = {...DEFAULT_PREFS}; }
   }
   function savePrefs() { localStorage.setItem(PREF_KEY, JSON.stringify(state.prefs)); }
@@ -41,7 +46,11 @@
     document.documentElement.style.setProperty('--reader-size', `${state.prefs.fontSize}px`);
     document.documentElement.style.setProperty('--reader-leading', String(state.prefs.lineHeight));
     document.body.classList.toggle('immersive', !!state.prefs.immersive);
-    document.body.classList.toggle('companions-off', state.prefs.companions === false);
+    const interactionMode = ['companions','messages','quiet'].includes(state.prefs.interactionMode) ? state.prefs.interactionMode : 'companions';
+    state.prefs.interactionMode = interactionMode;
+    document.body.classList.toggle('companions-off', interactionMode !== 'companions');
+    document.body.classList.toggle('messages-mode', interactionMode === 'messages');
+    document.body.classList.toggle('quiet-mode', interactionMode === 'quiet');
     if (ui.fontSelect) ui.fontSelect.value = state.prefs.font;
     if (ui.fontSize) ui.fontSize.value = String(state.prefs.fontSize);
     if (ui.fontSizeValue) ui.fontSizeValue.value = `${state.prefs.fontSize}px`;
@@ -54,11 +63,12 @@
       ui.immersiveToggle.textContent = state.prefs.immersive ? 'Exit Focus' : 'Focus';
     }
     if (ui.companionToggle) {
-      const on = state.prefs.companions !== false;
-      ui.companionToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
-      ui.companionToggle.classList.toggle('active', on);
-      ui.companionToggle.textContent = on ? 'Companions' : 'Quiet';
-      ui.companionToggle.title = on ? '뮤트·이드와 상호작용 사용' : '조용히 읽기 · CAST/QUIZ 생략';
+      const labels = {companions:'Companions', messages:'Messages', quiet:'Quiet'};
+      const titles = {companions:'캐릭터 + CAST/QUIZ', messages:'캐릭터 없이 CAST/QUIZ 팝업', quiet:'본문만 읽기'};
+      ui.companionToggle.setAttribute('aria-pressed', interactionMode === 'quiet' ? 'false' : 'true');
+      ui.companionToggle.classList.toggle('active', interactionMode !== 'quiet');
+      ui.companionToggle.textContent = labels[interactionMode];
+      ui.companionToggle.title = titles[interactionMode];
     }
   }
   function updatePrefs(patch) { state.prefs = {...state.prefs, ...patch}; savePrefs(); applyPrefs(); }
@@ -110,6 +120,22 @@
     }).join('');
   }
 
+  function safeImageSrc(raw) {
+    const value = String(raw || '').trim().replace(/\\/g, '/');
+    if (!value) return '';
+    if (/^[a-z][a-z0-9+.-]*:/i.test(value) && !/^https?:/i.test(value)) return '';
+    return resolveSeriesAsset(value);
+  }
+
+  function standaloneImageHtml(text) {
+    const m = String(text || '').trim().match(/^!\[([^\]]*)\]\(([^\s)]+)(?:\s+["'][^"']*["'])?\)$/);
+    if (!m) return '';
+    const src = safeImageSrc(m[2]);
+    if (!src) return '';
+    const alt = m[1].replace(/\\\]/g, ']');
+    return `<figure class="md-figure"><button type="button" class="md-image-open" data-image-src="${esc(src)}" data-image-alt="${esc(alt)}"><img class="md-image" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" decoding="async"></button>${alt ? `<figcaption>${inlineMarkdown(alt)}</figcaption>` : ''}</figure>`;
+  }
+
   function contentHtml(raw, keyPrefix) {
     let text = String(raw || '').trim();
     let chapter = '';
@@ -137,6 +163,8 @@
             const math = displayMath[Number(tokenMatch[1])] || '';
             return `<div class="math-display">${esc(math)}</div>`;
           }
+          const image = standaloneImageHtml(trimmed);
+          if (image) { paragraphIndex++; return image; }
           return `<p>${inlineWithCloze(trimmed, `${keyPrefix}:p${paragraphIndex++}`).replace(/\n/g, '<br>')}</p>`;
         }).join('')
       : '';
@@ -341,7 +369,7 @@
   }
 
   function stageMotionFor(slide) {
-    if (state.prefs.companions === false) return {active:'', MUTE:'normal', ED:'normal'};
+    if (state.prefs.interactionMode !== 'companions') return {active:'', MUTE:'normal', ED:'normal'};
     const castState = currentCastFor(slide);
     const cast = castState.item;
     if (cast) {
@@ -386,51 +414,56 @@
     return `<div class="quiz-sequence" data-quiz-count="${current.items.length}" data-quiz-index="${current.index}">${card}${controls}</div>`;
   }
 
+  function clearInteractionSurfaces() {
+    [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].forEach(el => { if(el){el.innerHTML='';el.hidden=true;} });
+    if (ui.messageDock) ui.messageDock.hidden = true;
+  }
+
   function renderStage(slide) {
     if (!ui.stage) return;
+    const mode = state.prefs.interactionMode || 'companions';
     const primaryType = slide?.primary?.type || 'normal';
-    const extras = slide?.extras || [];
-    const companionsOn = state.prefs.companions !== false;
-    if (!companionsOn) {
-      if (ui.quizMessage) { ui.quizMessage.innerHTML = ''; ui.quizMessage.hidden = true; }
-      if (ui.castMessage) { ui.castMessage.innerHTML = ''; ui.castMessage.hidden = true; }
-      state.animators.MUTE?.stop();
-      state.animators.ED?.stop();
+    if (mode === 'quiet') {
+      clearInteractionSurfaces();
+      state.animators.MUTE?.stop(); state.animators.ED?.stop();
       return;
     }
+    const extras = slide?.extras || [];
     const castState = currentCastFor(slide);
     const castVisible = !!castState.item;
     const hasQuiz = !castVisible && extras.some(x => x.type === 'quiz');
     const hasCast = castVisible;
+    const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
+    const castMarkup = hasCast ? castSequenceHtml(slide) : '';
+
+    if (mode === 'messages') {
+      if (ui.quizMessage) { ui.quizMessage.innerHTML=''; ui.quizMessage.hidden=true; }
+      if (ui.castMessage) { ui.castMessage.innerHTML=''; ui.castMessage.hidden=true; }
+      if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
+      if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
+      if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
+      if (ui.messageDock) ui.messageDock.hidden = !(quizMarkup || castMarkup);
+      state.animators.MUTE?.stop(); state.animators.ED?.stop();
+      return;
+    }
+
+    if (ui.messageDock) ui.messageDock.hidden=true;
+    if (ui.messageQuiz) {ui.messageQuiz.innerHTML='';ui.messageQuiz.hidden=true;}
+    if (ui.messageCast) {ui.messageCast.innerHTML='';ui.messageCast.hidden=true;}
     ui.stage.dataset.blockType = hasQuiz ? 'quiz' : hasCast ? 'cast' : primaryType;
     ui.stage.classList.toggle('is-dialogue-observer', primaryType === 'dialogue');
     ui.stage.classList.toggle('has-quiz', hasQuiz);
     ui.stage.classList.toggle('has-cast', hasCast);
     ui.stageStatus.textContent = (hasQuiz ? 'QUIZ' : hasCast ? 'CAST' : primaryType).toUpperCase();
-
-    const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
-    if (ui.quizMessage) {
-      ui.quizMessage.innerHTML = quizMarkup;
-      ui.quizMessage.hidden = !quizMarkup;
-    }
-    const castMarkup = hasCast ? castSequenceHtml(slide) : '';
-    if (ui.castMessage) {
-      ui.castMessage.innerHTML = castMarkup;
-      ui.castMessage.hidden = !castMarkup;
-    }
-
+    if (ui.quizMessage) { ui.quizMessage.innerHTML=quizMarkup; ui.quizMessage.hidden=!quizMarkup; }
+    if (ui.castMessage) { ui.castMessage.innerHTML=castMarkup; ui.castMessage.hidden=!castMarkup; }
     const motion = stageMotionFor(slide);
     ui.muteLayer.classList.toggle('is-active-speaker', motion.active === 'MUTE');
     ui.edLayer.classList.toggle('is-active-speaker', motion.active === 'ED');
     ui.muteLayer.classList.toggle('is-listener', motion.active !== 'MUTE');
     ui.edLayer.classList.toggle('is-listener', motion.active !== 'ED');
-    state.stageMotion.MUTE = motion.MUTE;
-    state.stageMotion.ED = motion.ED;
-
-    if (!document.hidden) {
-      state.animators.MUTE?.show(motion.MUTE, true);
-      state.animators.ED?.show(motion.ED, true);
-    }
+    state.stageMotion.MUTE=motion.MUTE; state.stageMotion.ED=motion.ED;
+    if (!document.hidden) { state.animators.MUTE?.show(motion.MUTE,true); state.animators.ED?.show(motion.ED,true); }
   }
 
   function categoryFor(slug) { return state.categories.find(x => x.slug === slug); }
@@ -503,6 +536,8 @@
     if (!selected) return;
     state.seriesPath = selected.path;
     state.meta = selected.data;
+    state.searchCache.clear();
+    state.searchState = {results:[],page:0,query:'',scope:'lecture'};
     state.lectureIndex = Math.min(Math.max(lectureIdx,0), state.meta.lectures.length - 1);
     const group = seriesGroup(state.meta);
     if (ui.categorySelect) ui.categorySelect.value = group;
@@ -522,6 +557,8 @@
     ui.lectureSelect.value = String(state.lectureIndex);
     ui.status.textContent = 'Loading…';
     const source = await fetchText(`${state.seriesPath}/${lecture.file}`);
+    state.currentSource = source;
+    state.searchCache.set(lecture.id, {source, slides:null});
     const report = Core.validateDocument(source);
     state.doc = Core.parseDocument(source, {allowedSpeakers:['MUTE','ED']});
     state.dialogueSideMap = new Map();
@@ -565,7 +602,7 @@
     ui.progressLabel.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
     ui.blockState.textContent = primary.type.toUpperCase();
     ui.sectionCount.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
-    const castState = state.prefs.companions === false ? {items:[], index:-1} : currentCastFor(slide);
+    const castState = state.prefs.interactionMode === 'quiet' ? {items:[], index:-1} : currentCastFor(slide);
     const atFirstSection = state.sectionIndex <= 0 && castState.index < 0;
     const atLastSection = state.sectionIndex >= state.slides.length - 1;
     const castRemaining = castState.items.length && castState.index < castState.items.length - 1;
@@ -580,9 +617,8 @@
   }
 
   function bindStageEvents() {
-    renderMath(ui.quizMessage);
-    renderMath(ui.castMessage);
-    const roots = [ui.quizMessage, ui.castMessage].filter(Boolean);
+    [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].forEach(renderMath);
+    const roots = [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].filter(Boolean);
     const all = selector => roots.flatMap(root => [...root.querySelectorAll(selector)]);
     all('[data-quiz-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
@@ -637,6 +673,13 @@
       btn.innerHTML = inlineMarkdown(revealed ? answer : (hint || '••••••'));
       renderMath(btn);
     }));
+    ui.reader.querySelectorAll('[data-image-src]').forEach(btn => btn.addEventListener('click', () => {
+      if (!ui.lightbox || !ui.lightboxImage) return;
+      ui.lightboxImage.src = btn.dataset.imageSrc || '';
+      ui.lightboxImage.alt = btn.dataset.imageAlt || '';
+      if (ui.lightboxCaption) ui.lightboxCaption.textContent = btn.dataset.imageAlt || '';
+      ui.lightbox.showModal();
+    }));
     ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
       e.stopPropagation();
       const action = btn.dataset.dialogueAction;
@@ -655,7 +698,7 @@
   }
 
   function stepCast(delta) {
-    if (state.prefs.companions === false) return false;
+    if (state.prefs.interactionMode === 'quiet') return false;
     const slide = state.slides[state.sectionIndex];
     if (!slide) return false;
     const cast = currentCastFor(slide);
@@ -670,7 +713,7 @@
 
   function nextReaderStep() {
     const slide = state.slides[state.sectionIndex];
-    if (state.prefs.companions !== false && slide) {
+    if (state.prefs.interactionMode !== 'quiet' && slide) {
       const cast = currentCastFor(slide);
       if (cast.items.length && cast.index < cast.items.length - 1) { stepCast(1); return; }
     }
@@ -682,7 +725,7 @@
 
   function prevReaderStep() {
     const slide = state.slides[state.sectionIndex];
-    if (state.prefs.companions !== false && slide) {
+    if (state.prefs.interactionMode !== 'quiet' && slide) {
       const cast = currentCastFor(slide);
       if (cast.items.length && cast.index >= 0) { stepCast(-1); return; }
     }
@@ -690,6 +733,54 @@
     if (state.lectureIndex > 0) {
       openLecture(state.lectureIndex - 1).then(() => goSection(Math.max(0, state.slides.length - 1), {preserveCompletion:true}));
     }
+  }
+
+  function stripForSearch(text) {
+    return String(text || '').replace(/\[\[CLOZE\|([^\]|]+)(?:\|[^\]]*)?\]\]/g,'$1').replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[`*_>#]/g,' ').replace(/\s+/g,' ').trim();
+  }
+  function slideSearchText(slide) {
+    if (!slide?.primary) return '';
+    if (slide.primary.type === 'dialogue') return stripForSearch((slide.primary.dialogue?.entries || []).map(x=>x.content||'').join(' '));
+    return stripForSearch(slide.primary.content || '');
+  }
+  function makeSnippet(text, query) {
+    const clean=stripForSearch(text); const low=clean.toLowerCase(); const at=low.indexOf(query.toLowerCase());
+    if(at<0) return clean.slice(0,150); const start=Math.max(0,at-55), end=Math.min(clean.length,at+query.length+90); return `${start?'…':''}${clean.slice(start,end)}${end<clean.length?'…':''}`;
+  }
+  async function searchLectureSource(lectureIndex, query) {
+    const lec=state.meta.lectures[lectureIndex]; if(!lec) return [];
+    let cached=state.searchCache.get(lec.id);
+    if(!cached){ const source=await fetchText(`${state.seriesPath}/${lec.file}`); cached={source,slides:null}; state.searchCache.set(lec.id,cached); }
+    if(!cached.slides){ const doc=Core.parseDocument(cached.source,{allowedSpeakers:['MUTE','ED']}); cached.slides=buildSlides(doc.blocks); }
+    const q=query.toLowerCase(); const out=[];
+    cached.slides.forEach((slide,sectionIndex)=>{const text=slideSearchText(slide); if(text.toLowerCase().includes(q)) out.push({lectureIndex,sectionIndex,lecture:lec,title: lec.title||lec.id,snippet:makeSnippet(text,query)});});
+    return out;
+  }
+  function renderSearchPager() {
+    const total=state.searchState.results.length, pages=Math.ceil(total/10); const page=state.searchState.page;
+    if(!ui.searchPager) return; if(pages<=1){ui.searchPager.hidden=true;ui.searchPager.innerHTML='';return;}
+    ui.searchPager.hidden=false; ui.searchPager.innerHTML=`<button type="button" data-page="${page-1}" ${page<=0?'disabled':''}>←</button><span>${page+1} / ${pages}</span><button type="button" data-page="${page+1}" ${page>=pages-1?'disabled':''}>→</button>`;
+    ui.searchPager.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{state.searchState.page=Number(b.dataset.page);renderStudySearchResults();}));
+  }
+  function renderStudySearchResults() {
+    const all=state.searchState.results, start=state.searchState.page*10, page=all.slice(start,start+10);
+    ui.searchSummary.textContent=state.searchState.query ? `${all.length}건 · ${state.searchState.scope==='series'?'현재 시리즈':'현재 강의'}` : '검색어를 입력하세요.';
+    ui.searchResults.innerHTML=page.length?page.map(r=>`<button type="button" class="study-search-result" data-lecture="${r.lectureIndex}" data-section="${r.sectionIndex}"><span>${esc(r.lecture.id)} · ${esc(r.title)}</span><strong>${esc(r.snippet)}</strong></button>`).join(''):(state.searchState.query?'<div class="search-empty">검색 결과가 없습니다.</div>':'');
+    ui.searchResults.querySelectorAll('[data-lecture]').forEach(btn=>btn.addEventListener('click',async()=>{const li=Number(btn.dataset.lecture),si=Number(btn.dataset.section),q=state.searchState.query; if(li!==state.lectureIndex) await openLecture(li); goSection(si,{preserveCompletion:true}); ui.searchDialog.close(); requestAnimationFrame(()=>highlightSearchTerm(q));}));
+    renderSearchPager();
+  }
+  async function runStudySearch() {
+    const query=ui.searchInput.value.trim(); const scope=ui.searchScope.value; state.searchState={results:[],page:0,query,scope};
+    if(!query){renderStudySearchResults();return;}
+    ui.searchSummary.textContent='검색 중…';
+    try{ let results=[]; if(scope==='lecture') results=await searchLectureSource(state.lectureIndex,query); else { const groups=await Promise.all(state.meta.lectures.map((_,i)=>searchLectureSource(i,query))); results=groups.flat(); } state.searchState.results=results; renderStudySearchResults(); }catch(err){ui.searchSummary.textContent=`검색 실패 · ${err.message}`;}
+  }
+  function highlightSearchTerm(query) {
+    if(!query||!ui.reader) return; ui.reader.querySelectorAll('mark.search-hit').forEach(m=>m.replaceWith(document.createTextNode(m.textContent)));
+    const walker=document.createTreeWalker(ui.reader,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentElement?.closest('script,style,button,code')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}); const nodes=[]; while(walker.nextNode())nodes.push(walker.currentNode);
+    const q=query.toLowerCase(); let first=null;
+    nodes.forEach(node=>{const text=node.nodeValue,at=text.toLowerCase().indexOf(q);if(at<0)return;const frag=document.createDocumentFragment();frag.append(text.slice(0,at));const mark=document.createElement('mark');mark.className='search-hit';mark.textContent=text.slice(at,at+query.length);frag.append(mark,text.slice(at+query.length));node.replaceWith(frag);if(!first)first=mark;});
+    first?.scrollIntoView({block:'center',behavior:'smooth'});
   }
 
   function renderLectureNav() {
@@ -716,8 +807,15 @@
     if (matches.length) openSeries(matches[0].index, 0);
   });
 
+  let searchTimer;
+  ui.searchToggle?.addEventListener('click',()=>{ui.searchDialog.showModal();ui.searchInput.focus();});
+  ui.searchClose?.addEventListener('click',()=>ui.searchDialog.close());
+  ui.searchInput?.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runStudySearch,180);});
+  ui.searchScope?.addEventListener('change',runStudySearch);
+  ui.lightboxClose?.addEventListener('click',()=>ui.lightbox.close());
+  ui.lightbox?.addEventListener('click',e=>{if(e.target===ui.lightbox)ui.lightbox.close();});
   ui.immersiveToggle?.addEventListener('click', () => updatePrefs({immersive: !state.prefs.immersive}));
-  ui.companionToggle?.addEventListener('click', () => { updatePrefs({companions: state.prefs.companions === false}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });
+  ui.companionToggle?.addEventListener('click', () => { const order=['companions','messages','quiet']; const current=order.indexOf(state.prefs.interactionMode); const next=order[(current+1)%order.length]; updatePrefs({interactionMode:next}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });
   ui.settingsToggle?.addEventListener('click', () => {
     const nextHidden = !ui.settingsPanel.hidden;
     ui.settingsPanel.hidden = nextHidden;

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.17.1">
+  <link rel="stylesheet" href="styles.css?v=0.19.0">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
@@ -31,8 +31,9 @@
           <span>강의</span>
           <select id="lecture-select" aria-label="강의 선택"></select>
         </label>
+        <button id="study-search-toggle" class="chrome-button" type="button" title="현재 강의 또는 시리즈 본문 검색">검색</button>
         <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">집중</button>
-        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="뮤트·이드와 상호작용 사용">동반자</button>
+        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="상호작용 표시 방식">동반자</button>
         <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
       </div>
     </header>
@@ -100,6 +101,33 @@
       </aside>
     </section>
 
+
+
+    <aside id="message-dock" class="message-dock" hidden aria-live="polite">
+      <div id="message-dock-status" class="message-dock-status">MESSAGE</div>
+      <div id="message-quiz" class="message-quiz" hidden></div>
+      <div id="message-cast" class="message-cast" hidden></div>
+    </aside>
+
+    <dialog id="study-search-dialog" class="study-search-dialog">
+      <div class="study-search-card">
+        <header><div><small>TEXT SEARCH</small><strong>본문 검색</strong></div><button id="study-search-close" type="button" aria-label="닫기">×</button></header>
+        <div class="study-search-controls">
+          <input id="study-search-input" type="search" placeholder="현재 강의 또는 시리즈에서 검색">
+          <select id="study-search-scope" aria-label="검색 범위"><option value="lecture">현재 강의</option><option value="series">현재 시리즈</option></select>
+        </div>
+        <div id="study-search-summary" class="study-search-summary">검색어를 입력하세요.</div>
+        <div id="study-search-results" class="study-search-results"></div>
+        <div id="study-search-pager" class="pager" hidden></div>
+      </div>
+    </dialog>
+
+    <dialog id="media-lightbox" class="media-lightbox">
+      <button id="media-lightbox-close" type="button" aria-label="이미지 닫기">×</button>
+      <img id="media-lightbox-image" alt="">
+      <div id="media-lightbox-caption"></div>
+    </dialog>
+
     <nav class="lecture-nav" aria-label="강의 탐색">
       <button id="prev-lecture" type="button">← 이전 강의</button>
       <button id="next-lecture" type="button">다음 강의 →</button>
@@ -112,8 +140,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="core.js?v=0.17.1"></script>
-  <script src="character.js?v=0.17.1"></script>
-  <script src="app.js?v=0.17.1"></script>
+  <script src="core.js?v=0.19.0"></script>
+  <script src="character.js?v=0.19.0"></script>
+  <script src="app.js?v=0.19.0"></script>
 </body>
 </html>

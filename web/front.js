@@ -13,7 +13,7 @@
   };
 
   const state = {
-    categories:[], series:[], index:6, angle:0,
+    categories:[], series:[], index:6, angle:0, searchPage:0, recentPage:0,
     dragging:false, dragMoved:false, dragStartX:0, dragStartAngle:0, dragStartIndex:-1, lastWheel:0,
     constellationToken:0, parallaxRAF:0
   };
@@ -214,7 +214,7 @@
     document.querySelectorAll('[data-close-portal]').forEach(b=>b.addEventListener('click',closePortal));
     document.querySelectorAll('[data-close-panel]').forEach(b=>b.addEventListener('click',closePanel));
     document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ if(!ui.panel.hidden)closePanel(); if(ui.portal && !ui.portal.hidden)closePortal(); } });
-    ui.search.addEventListener('input',renderSearch);
+    ui.search.addEventListener('input',()=>{state.searchPage=0;renderSearch();});
 
     if(matchMedia('(pointer:fine)').matches && !matchMedia('(prefers-reduced-motion: reduce)').matches){
       addEventListener('pointermove',handleParallax,{passive:true});
@@ -239,7 +239,7 @@
   function openPanel(view) {
     ui.panel.hidden=false; [ui.searchView,ui.recentView,ui.allView].forEach(x=>x.hidden=true);
     if(view==='search'){ui.searchView.hidden=false;ui.panelTitle.textContent='검색';ui.panelKicker.textContent='서재에서 찾기';setTimeout(()=>ui.search.focus(),0);renderSearch();}
-    if(view==='recent'){ui.recentView.hidden=false;ui.panelTitle.textContent='최근 강의';ui.panelKicker.textContent='최근 등록';}
+    if(view==='recent'){ui.recentView.hidden=false;ui.panelTitle.textContent='최근 강의';ui.panelKicker.textContent='최근 등록';state.recentPage=0;renderRecentPanel();}
     if(view==='all'){ui.allView.hidden=false;ui.panelTitle.textContent='전체 서가';ui.panelKicker.textContent='12개 카테고리';}
   }
   function closePanel(){ui.panel.hidden=true;}
@@ -265,6 +265,11 @@
   }
   function closePortal(){ if(ui.portal) ui.portal.hidden=true; }
 
+  function paginationHtml(total,page,kind){
+    const pages=Math.ceil(total/10); if(pages<=1) return '';
+    return `<div class="panel-pager"><button type="button" data-${kind}-page="${page-1}" ${page<=0?'disabled':''}>←</button><span>${page+1} / ${pages}</span><button type="button" data-${kind}-page="${page+1}" ${page>=pages-1?'disabled':''}>→</button></div>`;
+  }
+
   function renderSearch() {
     const q=ui.search.value.trim().toLowerCase();
     if(!q){ui.searchResults.innerHTML='<div class="empty-series">시리즈·강의 제목이나 카테고리를 입력하세요.</div>';return;}
@@ -274,14 +279,20 @@
       if([s.data.title,s.data.description,cat?.ko,cat?.en].some(x=>String(x||'').toLowerCase().includes(q))) results.push({type:'series',s,cat});
       (s.data.lectures||[]).forEach((lec,i)=>{ if(String(lec.title||'').toLowerCase().includes(q)) results.push({type:'lecture',s,cat,lec,i}); });
     });
-    ui.searchResults.innerHTML=results.slice(0,30).map(r=> r.type==='series'
+    const pages=Math.max(1,Math.ceil(results.length/10)); state.searchPage=Math.min(state.searchPage,pages-1);
+    const rows=results.slice(state.searchPage*10,state.searchPage*10+10);
+    ui.searchResults.innerHTML=(rows.map(r=> r.type==='series'
       ? `<a class="result-row" href="book.html?series=${encodeURIComponent(r.s.data.id)}"><small>${esc(r.cat?.ko||'')}</small><strong>${esc(r.s.data.title)}</strong><span>시리즈 →</span></a>`
-      : `<a class="result-row" href="study.html?series=${encodeURIComponent(r.s.data.id)}&lecture=${encodeURIComponent(r.lec.id)}"><small>${esc(r.s.data.title)}</small><strong>${esc(r.lec.title||r.lec.id)}</strong><span>강의 →</span></a>`).join('') || '<div class="empty-series">검색 결과가 없습니다.</div>';
+      : `<a class="result-row" href="study.html?series=${encodeURIComponent(r.s.data.id)}&lecture=${encodeURIComponent(r.lec.id)}"><small>${esc(r.s.data.title)}</small><strong>${esc(r.lec.title||r.lec.id)}</strong><span>강의 →</span></a>`).join('') || '<div class="empty-series">검색 결과가 없습니다.</div>') + paginationHtml(results.length,state.searchPage,'search');
+    ui.searchResults.querySelectorAll('[data-search-page]').forEach(b=>b.addEventListener('click',()=>{state.searchPage=Number(b.dataset.searchPage);renderSearch();}));
   }
 
   function renderRecentPanel() {
-    const recent=sortedRecent(state.series.filter(s => !['diary','journal'].includes(s.data.kind))).slice(0,12);
-    ui.recentResults.innerHTML=recent.map(s=>{const c=state.categories.find(x=>x.slug===s.data.category);return `<a class="result-row" href="book.html?series=${encodeURIComponent(s.data.id)}"><small>${esc(c?.ko||'')}</small><strong>${esc(s.data.title)}</strong><span>${s.data.lectures?.length||0}강</span></a>`}).join('') || '<div class="empty-series">아직 등록된 시리즈가 없습니다.</div>';
+    const recent=sortedRecent(state.series.filter(s => !['diary','journal'].includes(s.data.kind)));
+    const pages=Math.max(1,Math.ceil(recent.length/10)); state.recentPage=Math.min(state.recentPage,pages-1);
+    const rows=recent.slice(state.recentPage*10,state.recentPage*10+10);
+    ui.recentResults.innerHTML=(rows.map(s=>{const c=state.categories.find(x=>x.slug===s.data.category);return `<a class="result-row" href="book.html?series=${encodeURIComponent(s.data.id)}"><small>${esc(c?.ko||'')}</small><strong>${esc(s.data.title)}</strong><span>${s.data.lectures?.length||0}강</span></a>`}).join('') || '<div class="empty-series">아직 등록된 시리즈가 없습니다.</div>') + paginationHtml(recent.length,state.recentPage,'recent');
+    ui.recentResults.querySelectorAll('[data-recent-page]').forEach(b=>b.addEventListener('click',()=>{state.recentPage=Number(b.dataset.recentPage);renderRecentPanel();}));
   }
 
   function renderAllCategories() {

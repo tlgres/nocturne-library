@@ -274,6 +274,23 @@
       return this.getSeriesById(series.meta.id);
     }
 
+    async saveLectureImageAsset(series, file) {
+      if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
+      const extMatch = /\.(png|jpe?g|webp|gif|avif)$/i.exec(file.name || '');
+      if (!extMatch) throw new Error('본문 이미지는 PNG/JPG/WebP/GIF/AVIF 파일을 사용하세요.');
+      const ext = extMatch[1].toLowerCase().replace('jpeg', 'jpg');
+      const bytes = await file.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', bytes);
+      const hex = [...new Uint8Array(digest)].slice(0, 6).map(x => x.toString(16).padStart(2, '0')).join('');
+      const filename = `img-${hex}.${ext}`;
+      await this.getDirectory(`${series.base}/assets`, true);
+      const handle = await this.getFileHandle(`${series.base}/assets/${filename}`, true);
+      const writable = await handle.createWritable();
+      await writable.write(bytes);
+      await writable.close();
+      return `assets/${filename}`;
+    }
+
     async saveCoverAsset(series, file) {
       if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
       const extMatch = /\.(png|jpe?g|webp)$/i.exec(file.name || '');
