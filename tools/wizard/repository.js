@@ -84,6 +84,7 @@
       this.root = handle;
       await this.verify();
       await this.reload();
+      await this.refreshSeoFiles();
     }
 
     async getDirectory(path, create = false) {
@@ -156,6 +157,36 @@
       return this.series;
     }
 
+    async refreshSeoFiles() {
+      let config = { siteName: '해체된 의미의 서재', baseUrl: 'https://tlgres.github.io/nocturne-library/' };
+      try { config = { ...config, ...(await this.readJson('web/site.json')) }; } catch (_) {}
+      let base = String(config.baseUrl || '').trim();
+      if (!base) return;
+      if (!base.endsWith('/')) base += '/';
+      const escapeXml = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const urls = [{ loc: base }];
+      const usedCategories = new Set();
+      let hasDiary = false, hasJournal = false;
+      for (const item of this.series) {
+        const meta = item.meta; if (!meta) continue;
+        if (meta.kind === 'diary') hasDiary = true;
+        else if (meta.kind === 'journal') hasJournal = true;
+        else if (meta.category) usedCategories.add(meta.category);
+      }
+      for (const slug of [...usedCategories].sort()) urls.push({ loc: `${base}shelf.html?category=${encodeURIComponent(slug)}` });
+      if (hasDiary) urls.push({ loc: `${base}auxiliary.html?view=diary` });
+      if (hasJournal) urls.push({ loc: `${base}auxiliary.html?view=journal` });
+      for (const item of this.series) {
+        const meta = item.meta; if (!meta?.id) continue;
+        urls.push({ loc: `${base}book.html?series=${encodeURIComponent(meta.id)}`, lastmod: meta.updatedAt || meta.createdAt || '' });
+      }
+      const lines = ['<?xml version="1.0" encoding="UTF-8"?>','<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'];
+      for (const row of urls) { lines.push('  <url>', `    <loc>${escapeXml(row.loc)}</loc>`); if (row.lastmod) lines.push(`    <lastmod>${escapeXml(row.lastmod)}</lastmod>`); lines.push('  </url>'); }
+      lines.push('</urlset>');
+      await this.writeText('web/sitemap.xml', lines.join('\n') + '\n');
+      await this.writeText('web/robots.txt', `User-agent: *\nAllow: /\n\nSitemap: ${base}sitemap.xml\n`);
+    }
+
     getSeriesById(id) {
       return this.series.find(x => x.meta?.id === id) || null;
     }
@@ -206,6 +237,7 @@
       this.library.series.push({ path: baseRel, meta: `${baseRel}/meta.json` });
       await this.writeJson('web/library.json', this.library);
       await this.reload();
+      await this.refreshSeoFiles();
       return this.getSeriesById(id);
     }
 
@@ -240,6 +272,7 @@
       if (dialogueSpeakers && Object.keys(dialogueSpeakers).length) series.meta.dialogueSpeakers = dialogueSpeakers;
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
+      await this.refreshSeoFiles();
       return this.getSeriesById(series.meta.id);
     }
 
@@ -255,6 +288,7 @@
       series.meta.updatedAt = new Date().toISOString().slice(0, 10);
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
+      await this.refreshSeoFiles();
       return this.getSeriesById(series.meta.id);
     }
 
@@ -271,6 +305,7 @@
       series.meta.updatedAt = new Date().toISOString().slice(0, 10);
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
+      await this.refreshSeoFiles();
       return this.getSeriesById(series.meta.id);
     }
 

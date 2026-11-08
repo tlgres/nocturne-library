@@ -14,8 +14,8 @@
     castMessage: $('cast-message'),
     muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas'),
     searchToggle: $('study-search-toggle'), immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
-    fontSelect: $('reader-font-select'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
-    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
+    fontSelect: $('reader-font-select'), customFontWrap: $('reader-custom-font-wrap'), customFont: $('reader-custom-font'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
+    lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), alignSelect: $('reader-align-select'), widthSelect: $('reader-width-select'), paragraphSelect: $('reader-paragraph-select'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
     messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
     searchDialog:$('study-search-dialog'), searchClose:$('study-search-close'), searchInput:$('study-search-input'), searchScope:$('study-search-scope'), searchSummary:$('study-search-summary'), searchResults:$('study-search-results'), searchPager:$('study-search-pager'),
     lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption')
@@ -24,7 +24,7 @@
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
   const PREF_KEY = 'nocturne:webprefs:v1';
   const DIALOGUE_MODE_KEY = 'nocturne:dialogue-mode:v1';
-  const DEFAULT_PREFS = { font:'sans', fontSize:16, lineHeight:1.80, immersive:false, interactionMode:'companions', showLinks:true };
+  const DEFAULT_PREFS = { font:'sans', customFont:'', fontSize:16, lineHeight:1.80, align:'left', readerWidth:'default', paragraphSpacing:'default', immersive:false, interactionMode:'companions', showLinks:true };
   const state = {
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
@@ -41,10 +41,24 @@
   }
   function savePrefs() { localStorage.setItem(PREF_KEY, JSON.stringify(state.prefs)); }
   function applyPrefs() {
-    const font = state.prefs.font === 'sans' ? 'sans-serif' : state.prefs.font === 'system' ? 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' : 'serif';
+    const fontStacks = {
+      sans: 'Pretendard, "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Arial, sans-serif',
+      gothic: '"Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", Dotum, sans-serif',
+      serif: 'Georgia, "Times New Roman", "Noto Serif KR", Batang, serif',
+      myeongjo: '"Noto Serif KR", "Nanum Myeongjo", Batang, "Times New Roman", serif',
+      system: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif'
+    };
+    const cleanCustomFont = String(state.prefs.customFont || '').replace(/[{};]/g, '').trim();
+    const font = state.prefs.font === 'custom' && cleanCustomFont ? cleanCustomFont : (fontStacks[state.prefs.font] || fontStacks.sans);
+    const widths = {narrow:'680px', default:'780px', wide:'940px'};
+    const paragraphGaps = {compact:'.72em', default:'1.05em', wide:'1.45em'};
+    const align = state.prefs.align === 'justify' ? 'justify' : 'left';
     document.documentElement.style.setProperty('--reader-font', font);
     document.documentElement.style.setProperty('--reader-size', `${state.prefs.fontSize}px`);
     document.documentElement.style.setProperty('--reader-leading', String(state.prefs.lineHeight));
+    document.documentElement.style.setProperty('--reader-align', align);
+    document.documentElement.style.setProperty('--reader-width', widths[state.prefs.readerWidth] || widths.default);
+    document.documentElement.style.setProperty('--reader-paragraph-gap', paragraphGaps[state.prefs.paragraphSpacing] || paragraphGaps.default);
     document.body.classList.toggle('immersive', !!state.prefs.immersive);
     const interactionMode = ['companions','messages','quiet'].includes(state.prefs.interactionMode) ? state.prefs.interactionMode : 'companions';
     state.prefs.interactionMode = interactionMode;
@@ -52,10 +66,15 @@
     document.body.classList.toggle('messages-mode', interactionMode === 'messages');
     document.body.classList.toggle('quiet-mode', interactionMode === 'quiet');
     if (ui.fontSelect) ui.fontSelect.value = state.prefs.font;
+    if (ui.customFont) ui.customFont.value = state.prefs.customFont || '';
+    if (ui.customFontWrap) ui.customFontWrap.hidden = state.prefs.font !== 'custom';
     if (ui.fontSize) ui.fontSize.value = String(state.prefs.fontSize);
     if (ui.fontSizeValue) ui.fontSizeValue.value = `${state.prefs.fontSize}px`;
     if (ui.lineHeight) ui.lineHeight.value = String(state.prefs.lineHeight);
     if (ui.lineHeightValue) ui.lineHeightValue.value = Number(state.prefs.lineHeight).toFixed(2);
+    if (ui.alignSelect) ui.alignSelect.value = state.prefs.align || 'left';
+    if (ui.widthSelect) ui.widthSelect.value = state.prefs.readerWidth || 'default';
+    if (ui.paragraphSelect) ui.paragraphSelect.value = state.prefs.paragraphSpacing || 'default';
     if (ui.linkMode) ui.linkMode.value = state.prefs.showLinks === false ? 'text' : 'show';
     if (ui.immersiveToggle) {
       ui.immersiveToggle.setAttribute('aria-pressed', state.prefs.immersive ? 'true' : 'false');
@@ -822,8 +841,13 @@
     ui.settingsToggle.setAttribute('aria-expanded', nextHidden ? 'false' : 'true');
   });
   ui.fontSelect?.addEventListener('change', () => updatePrefs({font: ui.fontSelect.value}));
+  let customFontTimer;
+  ui.customFont?.addEventListener('input', () => { clearTimeout(customFontTimer); customFontTimer=setTimeout(() => updatePrefs({customFont: ui.customFont.value}), 180); });
   ui.fontSize?.addEventListener('input', () => updatePrefs({fontSize: Number(ui.fontSize.value)}));
   ui.lineHeight?.addEventListener('input', () => updatePrefs({lineHeight: Number(ui.lineHeight.value)}));
+  ui.alignSelect?.addEventListener('change', () => updatePrefs({align: ui.alignSelect.value}));
+  ui.widthSelect?.addEventListener('change', () => updatePrefs({readerWidth: ui.widthSelect.value}));
+  ui.paragraphSelect?.addEventListener('change', () => updatePrefs({paragraphSpacing: ui.paragraphSelect.value}));
   ui.linkMode?.addEventListener('change', () => { updatePrefs({showLinks: ui.linkMode.value !== 'text'}); renderSection(); });
   ui.settingsReset?.addEventListener('click', () => { state.prefs = {...DEFAULT_PREFS}; savePrefs(); applyPrefs(); });
   document.addEventListener('pointerdown', e => {

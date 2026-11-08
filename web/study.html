@@ -3,10 +3,11 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.19.0">
+  <link rel="stylesheet" href="styles.css?v=0.20.0">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
@@ -39,9 +40,20 @@
     </header>
 
     <section id="reader-settings" class="reader-settings" hidden>
-      <label><span>Font</span><select id="reader-font-select"><option value="serif">Browser Serif</option><option value="sans">Browser Sans</option><option value="system">System UI</option></select></label>
-      <label><span>Size</span><input id="reader-font-size" type="range" min="14" max="21" step="0.5"><output id="reader-font-size-value"></output></label>
-      <label><span>Line</span><input id="reader-line-height" type="range" min="1.5" max="2.1" step="0.05"><output id="reader-line-height-value"></output></label>
+      <label><span>Font</span><select id="reader-font-select">
+        <option value="sans">Modern Sans</option>
+        <option value="gothic">Korean Gothic</option>
+        <option value="serif">Book Serif</option>
+        <option value="myeongjo">Korean Serif</option>
+        <option value="system">System UI</option>
+        <option value="custom">Custom</option>
+      </select></label>
+      <label id="reader-custom-font-wrap" class="reader-custom-font" hidden><span>Custom font</span><input id="reader-custom-font" type="text" placeholder='예: "Pretendard", sans-serif' autocomplete="off"></label>
+      <label><span>Size</span><input id="reader-font-size" type="range" min="14" max="22" step="0.5"><output id="reader-font-size-value"></output></label>
+      <label><span>Line</span><input id="reader-line-height" type="range" min="1.45" max="2.2" step="0.05"><output id="reader-line-height-value"></output></label>
+      <label><span>Align</span><select id="reader-align-select"><option value="left">왼쪽 정렬</option><option value="justify">양쪽 정렬</option></select></label>
+      <label><span>Width</span><select id="reader-width-select"><option value="narrow">좁게</option><option value="default">기본</option><option value="wide">넓게</option></select></label>
+      <label><span>Paragraph</span><select id="reader-paragraph-select"><option value="compact">촘촘</option><option value="default">기본</option><option value="wide">넓게</option></select></label>
       <label><span>Links</span><select id="reader-link-mode"><option value="show">링크 표시</option><option value="text">텍스트만</option></select></label>
       <button id="reader-settings-reset" type="button">Reset</button>
     </section>
@@ -140,8 +152,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="core.js?v=0.19.0"></script>
-  <script src="character.js?v=0.19.0"></script>
-  <script src="app.js?v=0.19.0"></script>
+  <script src="core.js?v=0.20.0"></script>
+  <script src="character.js?v=0.20.0"></script>
+  <script src="app.js?v=0.20.0"></script>
 </body>
 </html>

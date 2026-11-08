@@ -350,7 +350,7 @@ h1 {
 .section {
   position: relative;
   z-index: 1;
-  width: min(100%, 790px);
+  width: min(100%, var(--reader-width, 780px));
   min-height: 470px;
   margin: 0 auto;
   padding: 8px 0 34px;
@@ -371,8 +371,9 @@ h1 {
   word-break: keep-all;
   overflow-wrap: break-word;
 }
-.section-body p { margin: 0 0 1.16em; }
+.section-body p { margin: 0 0 var(--reader-paragraph-gap, 1.16em); text-align: var(--reader-align, left); text-justify: inter-word; }
 .section-body p:last-child { margin-bottom: 0; }
+.section-body li, .section-body blockquote { text-align: var(--reader-align, left); text-justify: inter-word; }
 .section-body strong { color: #f1ebf4; font-weight: 650; }
 .section-body em { color: #c9c0d1; }
 .section-body code,
@@ -1103,7 +1104,7 @@ footer {
   .study-column { min-height: 520px; }
   .reader { padding: 32px 18px 34px; }
   .section { min-height: 390px; padding-bottom: 22px; }
-  .section-body { font-size: 16.5px; line-height: 1.86; }
+  .section-body { font-size: var(--reader-size); line-height: var(--reader-leading); }
   .chapter { margin-bottom: 24px; padding-left: 42px; font-size: 17px; }
   .section[data-type="focus"] { padding: 23px 18px 29px; }
   .section[data-type="stop"] { padding: 22px 16px 28px 20px; }
@@ -1132,6 +1133,9 @@ footer {
 :root {
   --reader-size: 16.5px;
   --reader-leading: 1.82;
+  --reader-align: left;
+  --reader-width: 780px;
+  --reader-paragraph-gap: 1.05em;
 }
 
 @media (min-width: 901px) {
@@ -1234,7 +1238,7 @@ footer {
     background-clip: padding-box;
   }
   .section {
-    width: min(100%, 780px);
+    width: min(100%, var(--reader-width));
     min-height: 0;
     padding-top: 3px;
     padding-bottom: 28px;
@@ -1244,7 +1248,8 @@ footer {
     font-size: var(--reader-size);
     line-height: var(--reader-leading);
   }
-  .section-body p { margin-bottom: 1.05em; }
+  .section-body p { margin-bottom: var(--reader-paragraph-gap); text-align: var(--reader-align); text-justify: inter-word; }
+  .section-body li, .section-body blockquote { text-align: var(--reader-align); text-justify: inter-word; }
   .chapter {
     margin-bottom: 24px;
     padding: 11px 16px 12px 43px;
@@ -1296,9 +1301,9 @@ footer {
   z-index: 100;
   top: 52px;
   right: max(18px, calc((100vw - 1540px) / 2 + 8px));
-  width: min(430px, calc(100vw - 32px));
+  width: min(640px, calc(100vw - 32px));
   display: grid;
-  grid-template-columns: minmax(120px, 1.2fr) 1fr 1fr auto;
+  grid-template-columns: repeat(4, minmax(105px, 1fr));
   gap: 10px;
   align-items: end;
   padding: 11px;
@@ -1307,6 +1312,8 @@ footer {
   background: rgba(20, 17, 25, .96);
   box-shadow: 0 18px 55px rgba(0,0,0,.42), inset 0 1px rgba(255,255,255,.025);
   backdrop-filter: blur(12px);
+  max-height: calc(100vh - 20px);
+  overflow-y: auto;
 }
 .reader-settings[hidden] { display: none; }
 .reader-settings label { display: grid; gap: 5px; min-width: 0; }
@@ -1316,7 +1323,9 @@ footer {
   letter-spacing: .14em;
   text-transform: uppercase;
 }
-.reader-settings select { width: 100%; min-width: 0; height: 29px; font-size: 10px; }
+.reader-settings select, .reader-settings input[type="text"] { width: 100%; min-width: 0; height: 29px; box-sizing: border-box; border: 1px solid rgba(185,174,199,.12); border-radius: 7px; background: rgba(255,255,255,.025); color: #b9b1c1; padding: 0 8px; font-size: 10px; }
+.reader-settings input[type="text"]::placeholder { color:#625e69; }
+.reader-custom-font[hidden] { display:none; }
 .reader-settings input[type="range"] { width: 100%; accent-color: #9c7ab2; }
 .reader-settings output { color: #9c94a3; font: 600 9px/1 system-ui, sans-serif; }
 .reader-settings > button {
@@ -1452,7 +1461,7 @@ body.immersive .progress button { height: 20px; }
 @media (min-width: 901px) {
   body.companions-off .study-grid { grid-template-columns: minmax(0, 1fr); }
   body.companions-off .character-stage { display: none; }
-  body.companions-off .section { width: min(100%, 900px); }
+  body.companions-off .section { width: min(100%, var(--reader-width)); }
   body.companions-off .section[data-type="dialogue"] { width: min(100%, 980px); }
 }
 body.companions-off #companion-toggle {
