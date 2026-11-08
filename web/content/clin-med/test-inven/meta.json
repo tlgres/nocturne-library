@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-10-29",
-  "updatedAt": "2026-11-06",
+  "updatedAt": "2026-11-07",
   "lectures": [
     {
       "id": "01",
@@ -124,6 +124,96 @@
       "updatedAt": "2026-11-06",
       "characters": 20810,
       "readMinutes": 38
+    },
+    {
+      "id": "23",
+      "file": "23.md",
+      "title": "23강. 갑상선·부신·뇌하수체 — 한 번의 수치로 끝나지 않는 내분비검사",
+      "createdAt": "2026-11-06",
+      "updatedAt": "2026-11-06",
+      "characters": 25013,
+      "readMinutes": 46
+    },
+    {
+      "id": "24",
+      "file": "24.md",
+      "title": "24강. 당뇨·저혈당·칼슘·골대사 — 대사 숫자에서 병태생리를 읽기",
+      "createdAt": "2026-11-06",
+      "updatedAt": "2026-11-06",
+      "characters": 24617,
+      "readMinutes": 45
+    },
+    {
+      "id": "25",
+      "file": "25.md",
+      "title": "25강. 발열·패혈증·중추신경계 감염 — 배양에서 LP와 source control까지",
+      "createdAt": "2026-11-06",
+      "updatedAt": "2026-11-06",
+      "characters": 16948,
+      "readMinutes": 31
+    },
+    {
+      "id": "26",
+      "file": "26.md",
+      "title": "26강. 관절종창·전신염증 — 관절천자에서 자가항체와 조직생검까지",
+      "createdAt": "2026-11-06",
+      "updatedAt": "2026-11-06",
+      "characters": 16962,
+      "readMinutes": 31
+    },
+    {
+      "id": "27",
+      "file": "27.md",
+      "title": "27강. 종괴·림프절·암 선별 — 발견에서 조직진단과 병기설정까지",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 21258,
+      "readMinutes": 39
+    },
+    {
+      "id": "28",
+      "file": "28.md",
+      "title": "28강. 임신·소아·특수상황 — 같은 검사라도 기준이 달라지는 환자들",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 19674,
+      "readMinutes": 36
+    },
+    {
+      "id": "29",
+      "file": "29.md",
+      "title": "29강. 안과 — 시력 한 줄에서 안저·OCT·시야검사까지",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 18213,
+      "readMinutes": 34
+    },
+    {
+      "id": "30",
+      "file": "30.md",
+      "title": "30강. 이비인후과·청각·평형 — 소리가 사라지고 세상이 돌 때",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 22471,
+      "readMinutes": 41
+    },
+    {
+      "id": "31",
+      "file": "31.md",
+      "title": "31강. 신경과 특수검사 — EEG·EMG·NCS·유발전위·자율신경검사",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 23835,
+      "readMinutes": 44
+    },
+    {
+      "id": "32",
+      "file": "32.md",
+      "title": "32강. 피부과 — 보고, 긁고, 비추고, 떼어내고, 잘라낸다",
+      "createdAt": "2026-11-07",
+      "updatedAt": "2026-11-07",
+      "characters": 21530,
+      "readMinutes": 40
     }
   ],
   "prologue": "환자의 몸은 정답을 직접 말하지 않는다. \n통증은 장소를 속이고, 수치는 원인을 감추며, 영상의 그림자는 때로 병이고 때로 우연이다. \n\n그러므로 의사는 질문을 설계한다. \n피를 뽑고, 파형을 기록하고, 빛과 소리를 몸속으로 보내며, 때로는 바늘과 관을 직접 들여보낸다. \n\n중요한 것은 검사를 많이 아는 것이 아니라 무엇을 묻기 위해 그것을 시행하는지 아는 것이다. 검사는 질문이고 결과는 대답이며, 임상추론은 그 대답을 듣고 다음 질문을 고르는 기술이다.",
