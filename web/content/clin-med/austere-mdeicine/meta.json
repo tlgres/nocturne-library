@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-11-04",
-  "updatedAt": "2026-11-06",
+  "updatedAt": "2026-11-11",
   "lectures": [
     {
       "id": "01",
@@ -18,6 +18,42 @@
       "id": "02",
       "file": "02.md",
       "title": "제2강. 피가 멎지 않는 곳 — Hemorrhage & Shock"
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "제3강. 열 수 없는 흉곽과 복부 — Trauma Without Surgery",
+      "createdAt": "2026-11-11",
+      "updatedAt": "2026-11-11",
+      "characters": 17198,
+      "readMinutes": 32
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "제4강. 부러진 뼈와 망가진 조직 — Orthopedic Survival",
+      "createdAt": "2026-11-11",
+      "updatedAt": "2026-11-11",
+      "characters": 21309,
+      "readMinutes": 39
+    },
+    {
+      "id": "05",
+      "file": "05.md",
+      "title": "제5강. 얼어붙은 대사 — Cold Injury & Hypothermia",
+      "createdAt": "2026-11-11",
+      "updatedAt": "2026-11-11",
+      "characters": 23710,
+      "readMinutes": 44
+    },
+    {
+      "id": "06",
+      "file": "06.md",
+      "title": "제6강. 끓어오르는 체온 — Heat, Dehydration & Hypernatremia",
+      "createdAt": "2026-11-11",
+      "updatedAt": "2026-11-11",
+      "characters": 25029,
+      "readMinutes": 46
     }
   ],
   "dialogueSpeakers": {
