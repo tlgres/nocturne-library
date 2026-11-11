@@ -16,7 +16,7 @@
     searchToggle: $('study-search-toggle'), immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
     fontSelect: $('reader-font-select'), customFontWrap: $('reader-custom-font-wrap'), customFont: $('reader-custom-font'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
     lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), alignSelect: $('reader-align-select'), widthSelect: $('reader-width-select'), paragraphSelect: $('reader-paragraph-select'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
-    messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
+    messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageDockToggle:$('message-dock-toggle'), messageDockBody:$('message-dock-body'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
     stageViewTabs:$('stage-view-tabs'), stageViewCompanions:$('stage-view-companions'), stageViewVideo:$('stage-view-video'), videoPanel:$('stage-video-panel'), videoFrame:$('stage-video-frame'), videoOpen:$('stage-video-open'),
     searchDialog:$('study-search-dialog'), searchClose:$('study-search-close'), searchInput:$('study-search-input'), searchScope:$('study-search-scope'), searchSummary:$('study-search-summary'), searchResults:$('study-search-results'), searchPager:$('study-search-pager'),
     lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption')
@@ -30,7 +30,7 @@
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
     prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'},
-    stageView:'companions', lectureVideo:null, videoEmbedUrl:''
+    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false
   };
 
   function loadPrefs() {
@@ -520,9 +520,27 @@
     bindStageEvents();
   }
 
+  function syncMessageDockCollapse() {
+    if (!ui.messageDock) return;
+    ui.messageDock.classList.toggle('is-collapsed', !!state.messageDockCollapsed);
+    if (ui.messageDockBody) ui.messageDockBody.hidden = !!state.messageDockCollapsed;
+    if (ui.messageDockToggle) {
+      ui.messageDockToggle.textContent = state.messageDockCollapsed ? '+' : '−';
+      ui.messageDockToggle.setAttribute('aria-expanded', state.messageDockCollapsed ? 'false' : 'true');
+      ui.messageDockToggle.setAttribute('aria-label', state.messageDockCollapsed ? '메시지 펼치기' : '메시지 접기');
+      ui.messageDockToggle.title = state.messageDockCollapsed ? '메시지 펼치기' : '메시지 접기';
+    }
+  }
+
+  function setMessageDockVisible(visible) {
+    if (!ui.messageDock) return;
+    ui.messageDock.hidden = !visible;
+    if (visible) syncMessageDockCollapse();
+  }
+
   function clearInteractionSurfaces() {
     [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].forEach(el => { if(el){el.innerHTML='';el.hidden=true;} });
-    if (ui.messageDock) ui.messageDock.hidden = true;
+    setMessageDockVisible(false);
   }
 
   function renderStage(slide) {
@@ -545,12 +563,12 @@
       if (mode === 'quiet') {
         if (ui.messageQuiz) { ui.messageQuiz.innerHTML=''; ui.messageQuiz.hidden=true; }
         if (ui.messageCast) { ui.messageCast.innerHTML=''; ui.messageCast.hidden=true; }
-        if (ui.messageDock) ui.messageDock.hidden = true;
+        setMessageDockVisible(false);
       } else {
         if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
         if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
         if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
-        if (ui.messageDock) ui.messageDock.hidden = !(quizMarkup || castMarkup);
+        setMessageDockVisible(!!(quizMarkup || castMarkup));
       }
       ui.stage.dataset.blockType = 'video';
       if (ui.stageStatus) ui.stageStatus.textContent = 'VIDEO';
@@ -570,7 +588,7 @@
       if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
       if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
       if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
-      if (ui.messageDock) ui.messageDock.hidden = !(quizMarkup || castMarkup);
+      setMessageDockVisible(!!(quizMarkup || castMarkup));
       state.animators.MUTE?.stop(); state.animators.ED?.stop();
       return;
     }
@@ -789,40 +807,51 @@
   }
 
   function bindInteractiveEvents() {
-    ui.reader.querySelectorAll('[data-cloze-key]').forEach(btn => btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const key = btn.dataset.clozeKey;
-      const revealed = !getInteraction(key);
-      setInteraction(key, revealed);
-      const answer = btn.dataset.clozeAnswer || '';
-      const hint = btn.dataset.clozeHint || '';
-      btn.classList.toggle('revealed', revealed);
-      btn.setAttribute('aria-pressed', revealed ? 'true' : 'false');
-      btn.title = revealed ? '다시 가리기' : (hint ? `힌트: ${hint}` : '정답 보기');
-      btn.innerHTML = inlineMarkdown(revealed ? answer : (hint || '••••••'));
-      renderMath(btn);
-    }));
-    ui.reader.querySelectorAll('[data-image-src]').forEach(btn => btn.addEventListener('click', () => {
-      if (!ui.lightbox || !ui.lightboxImage) return;
-      ui.lightboxImage.src = btn.dataset.imageSrc || '';
-      ui.lightboxImage.alt = btn.dataset.imageAlt || '';
-      if (ui.lightboxCaption) ui.lightboxCaption.textContent = btn.dataset.imageAlt || '';
-      ui.lightbox.showModal();
-    }));
-    ui.reader.querySelectorAll('[data-dialogue-action]').forEach(btn => btn.addEventListener('click', e => {
-      e.stopPropagation();
-      const action = btn.dataset.dialogueAction;
-      const key = btn.dataset.key;
-      if (action === 'mode') {
-        setInteraction(key, btn.dataset.value);
-        localStorage.setItem(DIALOGUE_MODE_KEY, btn.dataset.value);
+    if (!ui.reader || ui.reader.dataset.interactionsBound === '1') { bindStageEvents(); return; }
+    ui.reader.dataset.interactionsBound = '1';
+    ui.reader.addEventListener('click', e => {
+      const cloze = e.target.closest('[data-cloze-key]');
+      if (cloze && ui.reader.contains(cloze)) {
+        e.stopPropagation();
+        const key = cloze.dataset.clozeKey;
+        const revealed = !getInteraction(key);
+        setInteraction(key, revealed);
+        const answer = cloze.dataset.clozeAnswer || '';
+        const hint = cloze.dataset.clozeHint || '';
+        cloze.classList.toggle('revealed', revealed);
+        cloze.setAttribute('aria-pressed', revealed ? 'true' : 'false');
+        cloze.title = revealed ? '다시 가리기' : (hint ? `힌트: ${hint}` : '정답 보기');
+        cloze.innerHTML = inlineMarkdown(revealed ? answer : (hint || '••••••'));
+        renderMath(cloze);
+        return;
       }
-      if (action === 'step') {
-        const current = Number(getInteraction(key) ?? 0);
-        setInteraction(key, Math.max(0, current + (btn.dataset.value === 'next' ? 1 : -1)));
+
+      const imageButton = e.target.closest('[data-image-src]');
+      if (imageButton && ui.reader.contains(imageButton)) {
+        if (!ui.lightbox || !ui.lightboxImage) return;
+        ui.lightboxImage.src = imageButton.dataset.imageSrc || '';
+        ui.lightboxImage.alt = imageButton.dataset.imageAlt || '';
+        if (ui.lightboxCaption) ui.lightboxCaption.textContent = imageButton.dataset.imageAlt || '';
+        ui.lightbox.showModal();
+        return;
       }
-      renderSection();
-    }));
+
+      const dialogueButton = e.target.closest('[data-dialogue-action]');
+      if (dialogueButton && ui.reader.contains(dialogueButton)) {
+        e.stopPropagation();
+        const action = dialogueButton.dataset.dialogueAction;
+        const key = dialogueButton.dataset.key;
+        if (action === 'mode') {
+          setInteraction(key, dialogueButton.dataset.value);
+          localStorage.setItem(DIALOGUE_MODE_KEY, dialogueButton.dataset.value);
+        }
+        if (action === 'step') {
+          const current = Number(getInteraction(key) ?? 0);
+          setInteraction(key, Math.max(0, current + (dialogueButton.dataset.value === 'next' ? 1 : -1)));
+        }
+        renderSection();
+      }
+    });
     bindStageEvents();
   }
 
@@ -945,6 +974,7 @@
   ui.lightbox?.addEventListener('click',e=>{if(e.target===ui.lightbox)ui.lightbox.close();});
   ui.immersiveToggle?.addEventListener('click', () => updatePrefs({immersive: !state.prefs.immersive}));
   ui.companionToggle?.addEventListener('click', () => { const order=['companions','messages','quiet']; const current=order.indexOf(state.prefs.interactionMode); const next=order[(current+1)%order.length]; updatePrefs({interactionMode:next}); renderStage(state.slides[state.sectionIndex]); bindStageEvents(); });
+  ui.messageDockToggle?.addEventListener('click', e => { e.stopPropagation(); state.messageDockCollapsed = !state.messageDockCollapsed; syncMessageDockCollapse(); });
   ui.stageViewCompanions?.addEventListener('click', () => setStageView('companions'));
   ui.stageViewVideo?.addEventListener('click', () => setStageView('video'));
   ui.settingsToggle?.addEventListener('click', () => {

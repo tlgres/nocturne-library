@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-10-29",
-  "updatedAt": "2026-11-08",
+  "updatedAt": "2026-11-10",
   "lectures": [
     {
       "id": "01",
@@ -214,6 +214,69 @@
       "updatedAt": "2026-11-08",
       "characters": 21531,
       "readMinutes": 40
+    },
+    {
+      "id": "33",
+      "file": "33.md",
+      "title": "33강. 정형외과·근골격계 — X-ray에서 MRI·관절경·골생검까지",
+      "createdAt": "2026-11-08",
+      "updatedAt": "2026-11-08",
+      "characters": 25106,
+      "readMinutes": 46
+    },
+    {
+      "id": "34",
+      "file": "34.md",
+      "title": "34강. 정신건강·인지기능 — 설문지는 검사인가",
+      "createdAt": "2026-11-09",
+      "updatedAt": "2026-11-09",
+      "characters": 24273,
+      "readMinutes": 45
+    },
+    {
+      "id": "35",
+      "file": "35.md",
+      "title": "35강. 소아 발달·행동·학습 — 성장곡선에서 발달선별·신생아 선별검사까지",
+      "createdAt": "2026-11-09",
+      "updatedAt": "2026-11-09",
+      "characters": 24170,
+      "readMinutes": 44
+    },
+    {
+      "id": "36",
+      "file": "36.md",
+      "title": "36강. 산부인과 특수검사 — 임신주수별 산전검사에서 난임·자궁경부·태아감시까지",
+      "createdAt": "2026-11-09",
+      "updatedAt": "2026-11-09",
+      "characters": 31128,
+      "readMinutes": 57
+    },
+    {
+      "id": "37",
+      "file": "37.md",
+      "title": "37강. 알레르기·면역·호흡기 기능검사 — 항원에서 provocation까지",
+      "createdAt": "2026-11-10",
+      "updatedAt": "2026-11-10",
+      "characters": 25521,
+      "readMinutes": 47
+    },
+    {
+      "id": "38",
+      "file": "38.md",
+      "title": "38강. 재활·기능·노인의학 — 질병이 아니라 무엇을 할 수 있는가를 재는 검사",
+      "createdAt": "2026-11-10",
+      "updatedAt": "2026-11-10",
+      "characters": 27543,
+      "readMinutes": 51
+    },
+    {
+      "id": "39",
+      "file": "39.md",
+      "title": "39강. 비뇨의학과 — 혈뇨·배뇨장애·남성질환에서 내시경과 요역동학까지",
+      "createdAt": "2026-11-10",
+      "updatedAt": "2026-11-10",
+      "characters": 30257,
+      "readMinutes": 56
     }
   ],
   "prologue": "환자의 몸은 정답을 직접 말하지 않는다. \n통증은 장소를 속이고, 수치는 원인을 감추며, 영상의 그림자는 때로 병이고 때로 우연이다. \n\n그러므로 의사는 질문을 설계한다. \n피를 뽑고, 파형을 기록하고, 빛과 소리를 몸속으로 보내며, 때로는 바늘과 관을 직접 들여보낸다. \n\n중요한 것은 검사를 많이 아는 것이 아니라 무엇을 묻기 위해 그것을 시행하는지 아는 것이다. 검사는 질문이고 결과는 대답이며, 임상추론은 그 대답을 듣고 다음 질문을 고르는 기술이다.",

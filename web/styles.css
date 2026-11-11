@@ -1662,3 +1662,13 @@ body.messages-mode #companion-toggle{color:#c5b8d6;border-color:rgba(184,163,216
 .character-stage.video-view .character-layer,.character-stage.video-view .quiz-message,.character-stage.video-view .cast-message{display:none!important}.character-stage.video-view .night-window{opacity:.48}.character-stage.video-view .wood-floor{opacity:.72}.character-stage.video-view .stage-status{opacity:.55}
 body.video-stage-active.messages-mode .study-grid,body.video-stage-active.quiet-mode .study-grid{grid-template-columns:minmax(0,1fr) minmax(300px,38%)!important}body.video-stage-active.messages-mode .character-stage,body.video-stage-active.quiet-mode .character-stage,body.video-stage-active.companions-off .character-stage{display:block!important}body.video-stage-active:not(.quiet-mode) .message-dock:not([hidden]){display:block!important}body.video-stage-active.quiet-mode .message-dock{display:none!important}
 @media(max-width:900px){body.video-stage-active.messages-mode .study-grid,body.video-stage-active.quiet-mode .study-grid{grid-template-columns:1fr!important}.stage-video-panel{top:15%;left:6%;right:6%;bottom:9%}.stage-view-tabs{top:5%;right:6%}}
+
+/* v0.21.1 message dock collapse + interaction resilience */
+.message-dock-header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:20px}
+.message-dock-status{margin:0 2px}
+.message-dock-toggle{flex:0 0 auto;width:28px;height:24px;padding:0;border:1px solid rgba(255,255,255,.08);border-radius:7px;background:rgba(255,255,255,.025);color:#9b94a4;font:500 17px/1 system-ui,sans-serif;cursor:pointer}
+.message-dock-toggle:hover{color:#ddd4e2;border-color:rgba(195,179,216,.22);background:rgba(195,179,216,.06)}
+.message-dock-body[hidden]{display:none!important}
+.message-dock.is-collapsed{width:auto;min-width:170px;max-width:min(300px,calc(100vw - 28px));max-height:none;overflow:hidden;padding:9px 10px}
+.message-dock.is-collapsed .message-dock-status{margin:0;font-size:9px;letter-spacing:.16em;color:#9a92a5}
+@media(max-width:700px){.message-dock.is-collapsed{right:10px;bottom:10px;width:auto;min-width:160px;max-width:calc(100vw - 20px)}}

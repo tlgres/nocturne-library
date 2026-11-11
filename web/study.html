@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.21.0">
+  <link rel="stylesheet" href="styles.css?v=0.21.1">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
@@ -127,9 +127,14 @@
 
 
     <aside id="message-dock" class="message-dock" hidden aria-live="polite">
-      <div id="message-dock-status" class="message-dock-status">MESSAGE</div>
-      <div id="message-quiz" class="message-quiz" hidden></div>
-      <div id="message-cast" class="message-cast" hidden></div>
+      <div class="message-dock-header">
+        <div id="message-dock-status" class="message-dock-status">MESSAGE</div>
+        <button id="message-dock-toggle" class="message-dock-toggle" type="button" aria-expanded="true" aria-label="메시지 접기" title="메시지 접기">−</button>
+      </div>
+      <div id="message-dock-body" class="message-dock-body">
+        <div id="message-quiz" class="message-quiz" hidden></div>
+        <div id="message-cast" class="message-cast" hidden></div>
+      </div>
     </aside>
 
     <dialog id="study-search-dialog" class="study-search-dialog">
@@ -163,8 +168,8 @@
   </main>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
-  <script src="core.js?v=0.21.0"></script>
-  <script src="character.js?v=0.21.0"></script>
-  <script src="app.js?v=0.21.0"></script>
+  <script src="core.js?v=0.21.1"></script>
+  <script src="character.js?v=0.21.1"></script>
+  <script src="app.js?v=0.21.1"></script>
 </body>
 </html>
