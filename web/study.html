@@ -7,7 +7,7 @@
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.21.1">
+  <link rel="stylesheet" href="styles.css?v=0.22">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
@@ -19,7 +19,7 @@
         <div class="crumbs"><span id="category-name">서재</span><span class="sep">/</span><a id="series-name" class="series-book-link" href="#">Loading…</a></div>
       </div>
       <div class="top-actions">
-        <a class="chrome-button library-home-link" href="index.html" title="홈으로 돌아가기">◁ Home</a>
+        <a class="chrome-button chrome-icon-button library-home-link" href="index.html" title="홈으로 돌아가기" aria-label="홈으로 돌아가기">🏠</a>
         <label class="select-wrap category-select-wrap" title="카테고리 선택">
           <span>분류</span>
           <select id="category-select" aria-label="카테고리 선택"></select>
@@ -32,9 +32,12 @@
           <span>강의</span>
           <select id="lecture-select" aria-label="강의 선택"></select>
         </label>
-        <button id="study-search-toggle" class="chrome-button" type="button" title="현재 강의 또는 시리즈 본문 검색">검색</button>
-        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">집중</button>
-        <button id="companion-toggle" class="chrome-button" type="button" aria-pressed="true" title="상호작용 표시 방식">동반자</button>
+        <button id="study-search-toggle" class="chrome-button chrome-icon-button" type="button" title="현재 강의 또는 시리즈 본문 검색" aria-label="본문 검색">🔍</button>
+        <button id="lecture-toc-toggle" class="chrome-button chrome-icon-button" type="button" title="이 강의의 목차" aria-label="강의 목차">☰</button>
+        <button id="bookmark-toggle" class="chrome-button chrome-icon-button" type="button" title="책갈피" aria-label="책갈피">☆</button>
+        <button id="lecture-note-toggle" class="chrome-button chrome-icon-button" type="button" title="이 강의의 개인 메모" aria-label="개인 메모">📝</button>
+        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">Focus</button>
+        <button id="companion-toggle" class="chrome-button chrome-icon-button" type="button" aria-pressed="true" title="상호작용 표시 방식" aria-label="상호작용 표시 방식">💬</button>
         <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
       </div>
     </header>
@@ -85,6 +88,7 @@
       <aside id="character-stage" class="character-stage" aria-label="Nocturne companion stage" data-block-type="normal">
         <div class="room-vignette" aria-hidden="true"></div>
         <div class="night-window" aria-hidden="true">
+          <img id="window-constellation" class="window-constellation" alt="" src="">
           <span class="star star-a">✧</span>
           <span class="star star-b">✦</span>
           <span class="star star-c">✧</span>
@@ -150,6 +154,28 @@
       </div>
     </dialog>
 
+
+    <dialog id="lecture-toc-dialog" class="reader-tool-dialog">
+      <div class="reader-tool-card">
+        <header><div><small>LECTURE MAP</small><strong>강의 목차</strong></div><button id="lecture-toc-close" type="button" aria-label="닫기">×</button></header>
+        <div id="lecture-toc-list" class="reader-tool-list"></div>
+      </div>
+    </dialog>
+
+    <dialog id="bookmark-dialog" class="reader-tool-dialog">
+      <div class="reader-tool-card">
+        <header><div><small>BOOKMARKS</small><strong>책갈피</strong></div><button id="bookmark-close" type="button" aria-label="닫기">×</button></header>
+        <button id="bookmark-current" class="bookmark-current" type="button">☆ 현재 구간 저장</button>
+        <div id="bookmark-list" class="reader-tool-list bookmark-list"></div>
+      </div>
+    </dialog>
+
+    <aside id="lecture-note-panel" class="lecture-note-panel" hidden aria-label="강의 개인 메모">
+      <header><div><small>LOCAL NOTE</small><strong>강의 메모</strong></div><button id="lecture-note-close" type="button" aria-label="메모 닫기">×</button></header>
+      <textarea id="lecture-note-text" placeholder="이 강의를 읽으며 남길 메모…" spellcheck="false"></textarea>
+      <div class="lecture-note-footer"><span>이 기기에만 자동 저장됩니다.</span><div><button id="lecture-note-copy" type="button">복사</button><button id="lecture-note-clear" type="button">지우기</button></div></div>
+    </aside>
+
     <dialog id="media-lightbox" class="media-lightbox">
       <button id="media-lightbox-close" type="button" aria-label="이미지 닫기">×</button>
       <img id="media-lightbox-image" alt="">
@@ -170,6 +196,6 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="core.js?v=0.21.1"></script>
   <script src="character.js?v=0.21.1"></script>
-  <script src="app.js?v=0.21.1"></script>
+  <script src="app.js?v=0.22"></script>
 </body>
 </html>

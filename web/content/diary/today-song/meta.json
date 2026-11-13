@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "today-song",
+  "title": "지금 듣는 클래식",
+  "description": "지듣클",
+  "language": "ko",
+  "status": "ongoing",
+  "kind": "diary",
+  "createdAt": "2026-11-11",
+  "updatedAt": "2026-11-11",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "Paganini: Caprice No. 24 — 한 줄의 선율이 스물네 개의 얼굴을 갖는 법",
+      "createdAt": "2026-11-11",
+      "updatedAt": "2026-11-11",
+      "characters": 5131,
+      "readMinutes": 10,
+      "video": {
+        "type": "youtube",
+        "url": "https://youtu.be/uALsg4aWKB0?si=8nxe5lRIZk5UfxG4"
+      }
+    }
+  ]
+}

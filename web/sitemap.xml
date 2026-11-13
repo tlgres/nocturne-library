@@ -37,7 +37,7 @@
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=test-inven</loc>
-    <lastmod>2026-11-10</lastmod>
+    <lastmod>2026-11-11</lastmod>
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=wrong-integration</loc>
@@ -74,5 +74,13 @@
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=forensic-intelligence-analysis</loc>
     <lastmod>2026-11-06</lastmod>
+  </url>
+  <url>
+    <loc>https://tlgres.github.io/nocturne-library/book.html?series=today-song</loc>
+    <lastmod>2026-11-11</lastmod>
+  </url>
+  <url>
+    <loc>https://tlgres.github.io/nocturne-library/book.html?series=prev-med</loc>
+    <lastmod>2026-11-13</lastmod>
   </url>
 </urlset>

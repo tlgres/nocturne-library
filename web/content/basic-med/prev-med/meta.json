@@ -1,0 +1,166 @@
+{
+  "schemaVersion": 1,
+  "id": "prev-med",
+  "title": "예방의학과 공중보건학",
+  "category": "basic-med",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-11-12",
+  "updatedAt": "2026-11-13",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 건강한 사람은 누구인가 — 건강과 질병의 정의",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-12",
+      "characters": 20756,
+      "readMinutes": 38
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 질병을 예방한다는 것 — 예방의학과 공중보건학",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-12",
+      "characters": 19254,
+      "readMinutes": 36
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "3강. 인류는 어떻게 질병을 통제하기 시작했는가 — 예방의학과 공중보건학의 역사",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-12",
+      "characters": 23500,
+      "readMinutes": 43
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "4강. 원인은 어떻게 증명되는가 — 역학적 인과추론",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-12",
+      "characters": 19189,
+      "readMinutes": 35
+    },
+    {
+      "id": "05",
+      "file": "05.md",
+      "title": "5강. 인구집단의 건강을 숫자로 표현하기 — 역학자료와 보건지표",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 21617,
+      "readMinutes": 40
+    },
+    {
+      "id": "06",
+      "file": "06.md",
+      "title": "6강. 관찰은 어떻게 왜곡되는가 — 타당도·신뢰도·바이어스",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 26160,
+      "readMinutes": 48
+    },
+    {
+      "id": "07",
+      "file": "07.md",
+      "title": "7강. 연구설계 I — 기술역학과 관찰연구의 출발점",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 22676,
+      "readMinutes": 42
+    },
+    {
+      "id": "08",
+      "file": "08.md",
+      "title": "8강. 연구설계 II — 환자대조군연구와 코호트연구",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-12",
+      "characters": 22249,
+      "readMinutes": 41
+    },
+    {
+      "id": "09",
+      "file": "09.md",
+      "title": "9강. 실험은 어떻게 진실에 접근하는가 — 무작위대조시험과 근거중심의학",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 23107,
+      "readMinutes": 43
+    },
+    {
+      "id": "10",
+      "file": "10.md",
+      "title": "10강. 우연을 어떻게 계산하는가 — 의학통계학의 기초",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 20839,
+      "readMinutes": 38
+    },
+    {
+      "id": "11",
+      "file": "11.md",
+      "title": "11강. 어떤 통계검정을 선택해야 하는가 — 비모수검정과 회귀분석의 실제",
+      "createdAt": "2026-11-12",
+      "updatedAt": "2026-11-13",
+      "characters": 25249,
+      "readMinutes": 46
+    },
+    {
+      "id": "12",
+      "file": "12.md",
+      "title": "12강. 검사결과는 어떻게 믿을 수 있는가 — 베이즈 추론·ROC·비용효과분석",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 18585,
+      "readMinutes": 34
+    },
+    {
+      "id": "13",
+      "file": "13.md",
+      "title": "13강. 전염은 어떻게 증식하는가 — 감염병 역학과 유행의 수학",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 20544,
+      "readMinutes": 38
+    },
+    {
+      "id": "14",
+      "file": "14.md",
+      "title": "14강. 유행의 현장으로 — 집단발병 조사와 감염원 추적",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 21133,
+      "readMinutes": 39
+    },
+    {
+      "id": "15",
+      "file": "15.md",
+      "title": "15강. 전파의 고리를 끊는다는 것 — 감염병 관리와 예방의 원리",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 21106,
+      "readMinutes": 39
+    },
+    {
+      "id": "16",
+      "file": "16.md",
+      "title": "16강. 만성질환은 어떻게 만들어지는가 — 위험요인과 생애과정 역학",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 23319,
+      "readMinutes": 43
+    },
+    {
+      "id": "17",
+      "file": "17.md",
+      "title": "17강. 질병은 누구에게 더 많이 발생하는가 — 암·심혈관질환·대사질환의 역학",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 17065,
+      "readMinutes": 32
+    }
+  ]
+}

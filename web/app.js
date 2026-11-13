@@ -13,13 +13,17 @@
     stage: $('character-stage'), stageStatus: $('stage-status'), quizMessage: $('quiz-message'),
     castMessage: $('cast-message'),
     muteLayer: $('char-mute'), edLayer: $('char-ed'), muteCanvas: $('char-mute-canvas'), edCanvas: $('char-ed-canvas'),
-    searchToggle: $('study-search-toggle'), immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
+    searchToggle: $('study-search-toggle'), tocToggle:$('lecture-toc-toggle'), bookmarkToggle:$('bookmark-toggle'), noteToggle:$('lecture-note-toggle'), immersiveToggle: $('immersive-toggle'), companionToggle: $('companion-toggle'), settingsToggle: $('reader-settings-toggle'), settingsPanel: $('reader-settings'),
     fontSelect: $('reader-font-select'), customFontWrap: $('reader-custom-font-wrap'), customFont: $('reader-custom-font'), fontSize: $('reader-font-size'), fontSizeValue: $('reader-font-size-value'),
     lineHeight: $('reader-line-height'), lineHeightValue: $('reader-line-height-value'), alignSelect: $('reader-align-select'), widthSelect: $('reader-width-select'), paragraphSelect: $('reader-paragraph-select'), linkMode: $('reader-link-mode'), settingsReset: $('reader-settings-reset'),
     messageDock:$('message-dock'), messageDockStatus:$('message-dock-status'), messageDockToggle:$('message-dock-toggle'), messageDockBody:$('message-dock-body'), messageQuiz:$('message-quiz'), messageCast:$('message-cast'),
     stageViewTabs:$('stage-view-tabs'), stageViewCompanions:$('stage-view-companions'), stageViewVideo:$('stage-view-video'), videoPanel:$('stage-video-panel'), videoFrame:$('stage-video-frame'), videoOpen:$('stage-video-open'),
     searchDialog:$('study-search-dialog'), searchClose:$('study-search-close'), searchInput:$('study-search-input'), searchScope:$('study-search-scope'), searchSummary:$('study-search-summary'), searchResults:$('study-search-results'), searchPager:$('study-search-pager'),
-    lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption')
+    lightbox:$('media-lightbox'), lightboxClose:$('media-lightbox-close'), lightboxImage:$('media-lightbox-image'), lightboxCaption:$('media-lightbox-caption'),
+    tocDialog:$('lecture-toc-dialog'), tocClose:$('lecture-toc-close'), tocList:$('lecture-toc-list'),
+    bookmarkDialog:$('bookmark-dialog'), bookmarkClose:$('bookmark-close'), bookmarkCurrent:$('bookmark-current'), bookmarkList:$('bookmark-list'),
+    notePanel:$('lecture-note-panel'), noteClose:$('lecture-note-close'), noteText:$('lecture-note-text'), noteCopy:$('lecture-note-copy'), noteClear:$('lecture-note-clear'),
+    windowConstellation:$('window-constellation'), studyGrid:$('study-grid')
   };
 
   const READER_TYPES = new Set(['normal','fast','focus','stop','side','dialogue']);
@@ -30,7 +34,7 @@
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
     prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'},
-    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false
+    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false, noteSaveTimer:null
   };
 
   function loadPrefs() {
@@ -84,11 +88,12 @@
       ui.immersiveToggle.textContent = state.prefs.immersive ? 'Exit Focus' : 'Focus';
     }
     if (ui.companionToggle) {
-      const labels = {companions:'Companions', messages:'Messages', quiet:'Quiet'};
-      const titles = {companions:'캐릭터 + CAST/QUIZ', messages:'캐릭터 없이 CAST/QUIZ 팝업', quiet:'본문만 읽기'};
+      const icons = {companions:'💬', messages:'✉️', quiet:'⏩'};
+      const titles = {companions:'Companions · 캐릭터 + CAST/QUIZ', messages:'Messages · 캐릭터 없이 CAST/QUIZ 팝업', quiet:'Quiet · 본문만 읽기'};
       ui.companionToggle.setAttribute('aria-pressed', interactionMode === 'quiet' ? 'false' : 'true');
       ui.companionToggle.classList.toggle('active', interactionMode !== 'quiet');
-      ui.companionToggle.textContent = labels[interactionMode];
+      ui.companionToggle.textContent = icons[interactionMode];
+      ui.companionToggle.setAttribute('aria-label', titles[interactionMode]);
       ui.companionToggle.title = titles[interactionMode];
     }
   }
@@ -157,6 +162,62 @@
     return `<figure class="md-figure"><button type="button" class="md-image-open" data-image-src="${esc(src)}" data-image-alt="${esc(alt)}"><img class="md-image" src="${esc(src)}" alt="${esc(alt)}" loading="lazy" decoding="async"></button>${alt ? `<figcaption>${inlineMarkdown(alt)}</figcaption>` : ''}</figure>`;
   }
 
+  function splitMarkdownTableRow(line) {
+    let text = String(line || '').trim();
+    if (text.startsWith('|')) text = text.slice(1);
+    if (text.endsWith('|') && !text.endsWith('\\|')) text = text.slice(0, -1);
+    const cells = [];
+    let cell = '';
+    let clozeDepth = 0;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\\' && text[i + 1] === '|') { cell += '|'; i++; continue; }
+      if (text.startsWith('[[CLOZE|', i)) {
+        clozeDepth++;
+        cell += '[[CLOZE|';
+        i += '[[CLOZE|'.length - 1;
+        continue;
+      }
+      if (clozeDepth > 0 && text.startsWith(']]', i)) {
+        clozeDepth--;
+        cell += ']]';
+        i++;
+        continue;
+      }
+      if (ch === '|' && clozeDepth === 0) { cells.push(cell.trim()); cell = ''; continue; }
+      cell += ch;
+    }
+    cells.push(cell.trim());
+    return cells;
+  }
+
+  function markdownTableHtml(text, keyPrefix) {
+    const lines = String(text || '').split(/\n/).map(line => line.trim()).filter(Boolean);
+    if (lines.length < 2 || !lines[0].includes('|') || !lines[1].includes('|')) return '';
+    const header = splitMarkdownTableRow(lines[0]);
+    const separator = splitMarkdownTableRow(lines[1]);
+    if (header.length < 2 || separator.length !== header.length) return '';
+    const aligns = [];
+    for (const raw of separator) {
+      const marker = raw.replace(/\s+/g, '');
+      if (!/^:?-{3,}:?$/.test(marker)) return '';
+      aligns.push(marker.startsWith(':') && marker.endsWith(':') ? 'center' : marker.endsWith(':') ? 'right' : 'left');
+    }
+    const bodyRows = lines.slice(2).map(splitMarkdownTableRow).filter(row => row.length > 1);
+    const cellHtml = (cell, rowIndex, colIndex, tag) => {
+      const value = cell ?? '';
+      const rendered = inlineWithCloze(value, `${keyPrefix}:table:r${rowIndex}:c${colIndex}`);
+      const align = aligns[colIndex] || 'left';
+      return `<${tag} style="text-align:${align}">${rendered}</${tag}>`;
+    };
+    const head = `<thead><tr>${header.map((cell, i) => cellHtml(cell, 0, i, 'th')).join('')}</tr></thead>`;
+    const body = bodyRows.length ? `<tbody>${bodyRows.map((row, ri) => {
+      const normalized = Array.from({length: header.length}, (_, ci) => row[ci] ?? '');
+      return `<tr>${normalized.map((cell, ci) => cellHtml(cell, ri + 1, ci, 'td')).join('')}</tr>`;
+    }).join('')}</tbody>` : '';
+    return `<div class="md-table-wrap"><table class="md-table">${head}${body}</table></div>`;
+  }
+
   function contentHtml(raw, keyPrefix) {
     let text = String(raw || '').trim();
     let chapter = '';
@@ -186,6 +247,8 @@
           }
           const image = standaloneImageHtml(trimmed);
           if (image) { paragraphIndex++; return image; }
+          const table = markdownTableHtml(trimmed, `${keyPrefix}:p${paragraphIndex}`);
+          if (table) { paragraphIndex++; return table; }
           return `<p>${inlineWithCloze(trimmed, `${keyPrefix}:p${paragraphIndex++}`).replace(/\n/g, '<br>')}</p>`;
         }).join('')
       : '';
@@ -538,8 +601,16 @@
     if (visible) syncMessageDockCollapse();
   }
 
+  function setMessageDockKind(kind) {
+    if (!ui.messageDock) return;
+    const next = kind === 'quiz' || kind === 'cast' ? kind : '';
+    if (next) ui.messageDock.dataset.kind = next;
+    else delete ui.messageDock.dataset.kind;
+  }
+
   function clearInteractionSurfaces() {
     [ui.quizMessage,ui.castMessage,ui.messageQuiz,ui.messageCast].forEach(el => { if(el){el.innerHTML='';el.hidden=true;} });
+    setMessageDockKind('');
     setMessageDockVisible(false);
   }
 
@@ -568,6 +639,7 @@
         if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
         if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
         if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
+        setMessageDockKind(hasQuiz ? 'quiz' : hasCast ? 'cast' : '');
         setMessageDockVisible(!!(quizMarkup || castMarkup));
       }
       ui.stage.dataset.blockType = 'video';
@@ -588,12 +660,14 @@
       if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
       if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
       if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
+      setMessageDockKind(hasQuiz ? 'quiz' : hasCast ? 'cast' : '');
       setMessageDockVisible(!!(quizMarkup || castMarkup));
       state.animators.MUTE?.stop(); state.animators.ED?.stop();
       return;
     }
 
     if (ui.messageDock) ui.messageDock.hidden=true;
+    setMessageDockKind('');
     if (ui.messageQuiz) {ui.messageQuiz.innerHTML='';ui.messageQuiz.hidden=true;}
     if (ui.messageCast) {ui.messageCast.innerHTML='';ui.messageCast.hidden=true;}
     ui.stage.dataset.blockType = hasQuiz ? 'quiz' : hasCast ? 'cast' : primaryType;
@@ -626,6 +700,83 @@
     state.reopenedCompleted = false;
     const key = positionKey(); const raw = key ? localStorage.getItem(key) : null; const n = Number(raw);
     return Number.isInteger(n) && n >= 0 && n < state.slides.length ? n : 0;
+  }
+
+  function currentLecture() { return state.meta?.lectures?.[state.lectureIndex] || null; }
+  function lectureStorageBase(kind) {
+    const lecture = currentLecture();
+    return state.meta && lecture ? `nocturne:${kind}:v1:${state.meta.id}:${lecture.id}` : '';
+  }
+  function bookmarkKey() { return lectureStorageBase('bookmarks'); }
+  function noteKey() { return lectureStorageBase('note'); }
+  function chapterTitleForSlide(slide, index) {
+    if (!slide) return `구간 ${index + 1}`;
+    if (slide.primary?.type === 'dialogue') return `대화 · 구간 ${index + 1}`;
+    const m = String(slide.primary?.content || '').match(/^\s*■\s*([^\n]+)/);
+    return m ? m[1].trim() : `구간 ${index + 1}`;
+  }
+  function lectureChapters() {
+    const out=[];
+    state.slides.forEach((slide,index)=>{
+      if(slide.primary?.type === 'dialogue') return;
+      const m=String(slide.primary?.content||'').match(/^\s*■\s*([^\n]+)/);
+      if(m) out.push({index,title:m[1].trim(),type:slide.primary.type});
+    });
+    return out;
+  }
+  function readBookmarks() {
+    const key=bookmarkKey(); if(!key) return [];
+    try { const value=JSON.parse(localStorage.getItem(key)||'[]'); return Array.isArray(value)?value.filter(x=>Number.isInteger(x)&&x>=0&&x<state.slides.length):[]; } catch { return []; }
+  }
+  function writeBookmarks(items) { const key=bookmarkKey(); if(key) localStorage.setItem(key,JSON.stringify([...new Set(items)].sort((a,b)=>a-b))); }
+  function isCurrentBookmarked(){ return readBookmarks().includes(state.sectionIndex); }
+  function syncBookmarkButton(){
+    if(!ui.bookmarkToggle) return;
+    const active=isCurrentBookmarked();
+    ui.bookmarkToggle.textContent=active?'★':'☆';
+    ui.bookmarkToggle.classList.toggle('bookmarked',active);
+    ui.bookmarkToggle.title=active?'책갈피 · 현재 구간 저장됨':'책갈피';
+  }
+  function renderToc(){
+    if(!ui.tocList) return;
+    const chapters=lectureChapters();
+    ui.tocList.innerHTML=chapters.length?chapters.map((item,i)=>`<button type="button" data-toc-section="${item.index}" class="reader-tool-row ${item.index===state.sectionIndex?'current':''}"><span>${String(i+1).padStart(2,'0')}</span><strong>${esc(item.title)}</strong><small>${item.index+1} / ${state.slides.length}</small></button>`).join(''):'<div class="reader-tool-empty">이 강의에는 ■ 소제목이 없습니다.</div>';
+    ui.tocList.querySelectorAll('[data-toc-section]').forEach(btn=>btn.addEventListener('click',()=>{goSection(Number(btn.dataset.tocSection),{preserveCompletion:true});ui.tocDialog?.close();}));
+  }
+  function renderBookmarks(){
+    if(!ui.bookmarkList||!ui.bookmarkCurrent) return;
+    const items=readBookmarks(); const active=items.includes(state.sectionIndex);
+    ui.bookmarkCurrent.textContent=active?'★ 현재 구간 책갈피 해제':'☆ 현재 구간 저장';
+    ui.bookmarkCurrent.classList.toggle('active',active);
+    ui.bookmarkList.innerHTML=items.length?items.map(index=>`<div class="bookmark-row"><button type="button" data-bookmark-section="${index}" class="reader-tool-row ${index===state.sectionIndex?'current':''}"><span>${String(index+1).padStart(2,'0')}</span><strong>${esc(chapterTitleForSlide(state.slides[index],index))}</strong><small>${index+1} / ${state.slides.length}</small></button><button type="button" class="bookmark-remove" data-bookmark-remove="${index}" title="책갈피 삭제" aria-label="책갈피 삭제">×</button></div>`).join(''):'<div class="reader-tool-empty">저장된 책갈피가 없습니다.</div>';
+    ui.bookmarkList.querySelectorAll('[data-bookmark-section]').forEach(btn=>btn.addEventListener('click',()=>{goSection(Number(btn.dataset.bookmarkSection),{preserveCompletion:true});ui.bookmarkDialog?.close();}));
+    ui.bookmarkList.querySelectorAll('[data-bookmark-remove]').forEach(btn=>btn.addEventListener('click',e=>{e.stopPropagation();writeBookmarks(items.filter(x=>x!==Number(btn.dataset.bookmarkRemove)));renderBookmarks();syncBookmarkButton();}));
+  }
+  function toggleCurrentBookmark(){
+    const items=readBookmarks(); const at=items.indexOf(state.sectionIndex);
+    if(at>=0) items.splice(at,1); else items.push(state.sectionIndex);
+    writeBookmarks(items); renderBookmarks(); syncBookmarkButton();
+  }
+  function loadLectureNote(){ if(ui.noteText) ui.noteText.value=noteKey()?localStorage.getItem(noteKey())||'':''; }
+  function saveLectureNote(){ const key=noteKey(); if(key&&ui.noteText) localStorage.setItem(key,ui.noteText.value); }
+  function configureWindowConstellation(){
+    if(!ui.windowConstellation) return;
+    const group=seriesGroup(state.meta); const cat=categoryFor(group); const name=String(cat?.constellation||'').toLowerCase();
+    if(!name){ui.windowConstellation.removeAttribute('src');ui.windowConstellation.hidden=true;return;}
+    ui.windowConstellation.src=`assets/constellations/${name}.svg`;
+    ui.windowConstellation.hidden=false;
+  }
+  function updateWindowProgress(){
+    if(!ui.stage) return;
+    const ratio=state.slides.length<=1?1:state.sectionIndex/(state.slides.length-1);
+    ui.stage.style.setProperty('--constellation-progress',ratio.toFixed(3));
+  }
+  function playLectureTransition(){
+    if(!ui.studyGrid) return;
+    ui.studyGrid.classList.remove('lecture-enter');
+    void ui.studyGrid.offsetWidth;
+    ui.studyGrid.classList.add('lecture-enter');
+    setTimeout(()=>ui.studyGrid?.classList.remove('lecture-enter'),260);
   }
 
   async function fetchJson(url) { const res = await fetch(url, {cache:'no-store'}); if (!res.ok) throw new Error(`${url}: ${res.status}`); return res.json(); }
@@ -680,6 +831,8 @@
   async function openSeries(seriesIdx, lectureIdx = 0) {
     const selected = state.seriesList[seriesIdx];
     if (!selected) return;
+    clearTimeout(state.noteSaveTimer);
+    saveLectureNote();
     state.seriesPath = selected.path;
     state.meta = selected.data;
     state.searchCache.clear();
@@ -692,10 +845,14 @@
     ui.seriesName.textContent = state.meta.title; ui.seriesName.dataset.seriesId = state.meta.id; ui.seriesName.href = `book.html?series=${encodeURIComponent(state.meta.id)}`;
     ui.seriesDescription.textContent = state.meta.description || '';
     ui.categoryName.textContent = groupLabel(group);
-    await openLecture(state.lectureIndex);
+    await openLecture(state.lectureIndex, {skipNoteFlush:true});
   }
 
-  async function openLecture(index) {
+  async function openLecture(index, options = {}) {
+    if (!options.skipNoteFlush) {
+      clearTimeout(state.noteSaveTimer);
+      saveLectureNote();
+    }
     state.lectureIndex = Math.min(Math.max(index,0), state.meta.lectures.length - 1);
     state.interaction.clear();
     const lecture = state.meta.lectures[state.lectureIndex];
@@ -710,11 +867,14 @@
     state.dialogueSideMap = new Map();
     state.slides = buildSlides(state.doc.blocks);
     configureLectureVideo();
+    configureWindowConstellation();
+    loadLectureNote();
     ui.notice.hidden = true;
     ui.lectureIndex.textContent = `Lecture ${String(state.lectureIndex + 1).padStart(2,'0')} · ${state.meta.lectures.length}`;
     ui.lectureTitle.textContent = state.doc.title || lecture.title || state.meta.title;
     state.sectionIndex = restorePosition();
     renderProgress(); renderSection(); renderLectureNav(); updateUrl();
+    playLectureTransition();
     ui.status.textContent = `Nocturne Format ${state.doc.formatVersion}${report.warnings.length ? ` · ${report.warnings.length} warning` : ''}`;
   }
 
@@ -749,6 +909,8 @@
     ui.progressLabel.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
     ui.blockState.textContent = primary.type.toUpperCase();
     ui.sectionCount.textContent = `${state.sectionIndex + 1} / ${state.slides.length}`;
+    syncBookmarkButton();
+    updateWindowProgress();
     const castState = state.prefs.interactionMode === 'quiet' ? {items:[], index:-1} : currentCastFor(slide);
     const atFirstSection = state.sectionIndex <= 0 && castState.index < 0;
     const atLastSection = state.sectionIndex >= state.slides.length - 1;
@@ -967,6 +1129,18 @@
 
   let searchTimer;
   ui.searchToggle?.addEventListener('click',()=>{ui.searchDialog.showModal();ui.searchInput.focus();});
+  ui.tocToggle?.addEventListener('click',()=>{renderToc();ui.tocDialog?.showModal();});
+  ui.tocClose?.addEventListener('click',()=>ui.tocDialog?.close());
+  ui.tocDialog?.addEventListener('click',e=>{if(e.target===ui.tocDialog)ui.tocDialog.close();});
+  ui.bookmarkToggle?.addEventListener('click',()=>{renderBookmarks();ui.bookmarkDialog?.showModal();});
+  ui.bookmarkClose?.addEventListener('click',()=>ui.bookmarkDialog?.close());
+  ui.bookmarkDialog?.addEventListener('click',e=>{if(e.target===ui.bookmarkDialog)ui.bookmarkDialog.close();});
+  ui.bookmarkCurrent?.addEventListener('click',toggleCurrentBookmark);
+  ui.noteToggle?.addEventListener('click',()=>{loadLectureNote();ui.notePanel.hidden=false;ui.noteText?.focus();});
+  ui.noteClose?.addEventListener('click',()=>{saveLectureNote();ui.notePanel.hidden=true;});
+  ui.noteText?.addEventListener('input',()=>{clearTimeout(state.noteSaveTimer);state.noteSaveTimer=setTimeout(saveLectureNote,180);});
+  ui.noteCopy?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(ui.noteText?.value||'');ui.noteCopy.textContent='복사됨';setTimeout(()=>{if(ui.noteCopy)ui.noteCopy.textContent='복사';},900);}catch{}});
+  ui.noteClear?.addEventListener('click',()=>{if(!ui.noteText)return;ui.noteText.value='';saveLectureNote();ui.noteText.focus();});
   ui.searchClose?.addEventListener('click',()=>ui.searchDialog.close());
   ui.searchInput?.addEventListener('input',()=>{clearTimeout(searchTimer);searchTimer=setTimeout(runStudySearch,180);});
   ui.searchScope?.addEventListener('change',runStudySearch);

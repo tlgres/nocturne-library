@@ -48,6 +48,14 @@
     {
       "path": "content/language/forensic-intelligence-analysis",
       "meta": "content/language/forensic-intelligence-analysis/meta.json"
+    },
+    {
+      "path": "content/diary/today-song",
+      "meta": "content/diary/today-song/meta.json"
+    },
+    {
+      "path": "content/basic-med/prev-med",
+      "meta": "content/basic-med/prev-med/meta.json"
     }
   ]
 }
