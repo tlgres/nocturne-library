@@ -44,6 +44,12 @@
       this.currentMotion = null;
       this.animateMode = null;
       this.hasFrame = false;
+      this.nativeImg = document.createElement('img');
+      this.nativeImg.className = 'character-native';
+      this.nativeImg.alt = '';
+      this.nativeImg.setAttribute('aria-hidden', 'true');
+      this.nativeImg.draggable = false;
+      this.canvas.insertAdjacentElement('afterend', this.nativeImg);
     }
 
     async resolveMotion(fileBase) {
@@ -73,6 +79,17 @@
       if (this.ctx) this.ctx.clearRect(0, 0, this.canvas.width || 1, this.canvas.height || 1);
     }
 
+    setMissing(missing) {
+      this.canvas.dataset.missing = missing ? 'true' : 'false';
+      this.canvas.closest('.character-layer')?.classList.toggle('is-missing', !!missing);
+    }
+
+    hideNative() {
+      if (!this.nativeImg) return;
+      this.nativeImg.classList.remove('is-visible');
+      this.nativeImg.removeAttribute('src');
+    }
+
     stop() {
       this.runToken += 1;
       try { this.decoder?.close?.(); } catch (_) {}
@@ -80,6 +97,44 @@
       this.currentMotion = null;
       this.animateMode = null;
       this.hasFrame = false;
+      this.hideNative();
+    }
+
+    async showNative(fileBase, token) {
+      this.clear();
+      this.canvas.classList.add('is-native-fallback');
+      const img = this.nativeImg;
+      const candidates = ['webp', 'gif'];
+
+      for (const ext of candidates) {
+        for (const folder of this.config.folders) {
+          if (token !== this.runToken) return false;
+          const url = `${folder}/${fileBase}.${ext}`;
+          const ok = await new Promise(resolve => {
+            const onLoad = () => { cleanup(); resolve(true); };
+            const onError = () => { cleanup(); resolve(false); };
+            const cleanup = () => {
+              img.removeEventListener('load', onLoad);
+              img.removeEventListener('error', onError);
+            };
+            img.addEventListener('load', onLoad, {once:true});
+            img.addEventListener('error', onError, {once:true});
+            img.src = url;
+          });
+          if (token !== this.runToken) return false;
+          if (ok) {
+            img.classList.add('is-visible');
+            this.setMissing(false);
+            this.hasFrame = true;
+            return true;
+          }
+        }
+      }
+
+      img.classList.remove('is-visible');
+      this.canvas.classList.remove('is-native-fallback');
+      this.setMissing(true);
+      return false;
     }
 
     async show(motionName='normal', animate=true) {
@@ -91,10 +146,11 @@
       const token = this.runToken;
       this.currentMotion = resolvedName;
       this.animateMode = !!animate;
-      this.canvas.dataset.missing = 'false';
+      this.setMissing(false);
+      this.canvas.classList.remove('is-native-fallback');
 
       if (!('ImageDecoder' in window)) {
-        this.canvas.dataset.missing = 'true';
+        await this.showNative(motion.file, token);
         return;
       }
 
@@ -145,8 +201,12 @@
         }
       } catch (_) {
         if (token !== this.runToken) return;
-        this.clear();
-        this.canvas.dataset.missing = 'true';
+        try { this.decoder?.close?.(); } catch (_) {}
+        this.decoder = null;
+        // Decoder path failed: fall back to the browser's native animated-image
+        // element before giving up. This covers iOS/iPadOS WebKit and future
+        // decoder incompatibilities while keeping desktop tempo control.
+        await this.showNative(motion.file, token);
       }
     }
   }
