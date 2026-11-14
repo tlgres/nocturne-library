@@ -34,7 +34,7 @@
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
     prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'},
-    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false, noteSaveTimer:null
+    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false, noteSaveTimer:null, messagePortraits:{}
   };
 
   function loadPrefs() {
@@ -89,7 +89,7 @@
     }
     if (ui.companionToggle) {
       const icons = {companions:'💬', messages:'✉️', quiet:'⏩'};
-      const titles = {companions:'Companions · 캐릭터 + CAST/QUIZ', messages:'Messages · 캐릭터 없이 CAST/QUIZ 팝업', quiet:'Quiet · 본문만 읽기'};
+      const titles = {companions:'Companions · 캐릭터 + CAST/QUIZ', messages:'Messages · 경량 portrait + CAST/QUIZ 팝업', quiet:'Quiet · 본문만 읽기'};
       ui.companionToggle.setAttribute('aria-pressed', interactionMode === 'quiet' ? 'false' : 'true');
       ui.companionToggle.classList.toggle('active', interactionMode !== 'quiet');
       ui.companionToggle.textContent = icons[interactionMode];
@@ -465,6 +465,53 @@
     return {active:'', MUTE:'normal', ED:'normal'};
   }
 
+  function messageAvatarHtml(speaker, label='') {
+    const id = speaker === 'MUTE' ? 'MUTE' : 'ED';
+    const folder = id === 'MUTE' ? 'Mute' : 'Ed';
+    const fallback = `characters/${folder}/message.svg`;
+    const optional = `characters/${folder}/message.webp`;
+    const name = label || (id === 'MUTE' ? '뮤트' : '이드');
+    return `<span class="message-avatar" data-message-speaker="${id}"><img src="${fallback}" data-portrait-webp="${optional}" alt="${esc(name)}"><span class="message-avatar-name">${esc(name)}</span></span>`;
+  }
+
+  function hydrateMessagePortraits(root) {
+    if (!root) return;
+    root.querySelectorAll('img[data-portrait-webp]').forEach(img => {
+      const src = img.dataset.portraitWebp;
+      if (!src || img.dataset.portraitChecked === '1') return;
+      img.dataset.portraitChecked = '1';
+      const cached = state.messagePortraits[src];
+      if (cached === true) { img.src = src; return; }
+      if (cached === false) return;
+      const probe = new Image();
+      probe.onload = () => { state.messagePortraits[src] = true; if (img.isConnected) img.src = src; };
+      probe.onerror = () => { state.messagePortraits[src] = false; };
+      probe.src = src;
+    });
+  }
+
+  function messageCastSequenceHtml(slide) {
+    const current = currentCastFor(slide);
+    if (!current.item) return '';
+    const start = Math.max(0, current.index - 1);
+    const hiddenCount = start;
+    const messages = current.items.slice(start, current.index + 1).map((item, offset) => {
+      const absoluteIndex = start + offset;
+      const label = item.speaker === 'MUTE' ? '뮤트' : '이드';
+      return `<div class="message-chat-row ${item.speaker === 'MUTE' ? 'from-mute' : 'from-ed'}" data-speaker="${esc(item.speaker)}" data-message-index="${absoluteIndex}">${messageAvatarHtml(item.speaker, label)}<div class="message-chat-bubble"><div class="message-chat-name">${esc(label)}</div><div class="message-chat-text">${inlineMarkdown(item.content)}</div></div></div>`;
+    }).join('');
+    const prevDisabled = current.index <= 0 ? 'disabled' : '';
+    const nextDisabled = current.index >= current.items.length - 1 ? 'disabled' : '';
+    const controls = current.items.length > 1 ? `<div class="message-chat-controls"><button type="button" data-cast-action="step" data-key="${current.key}" data-value="prev" ${prevDisabled}>←</button><span>${current.index + 1} / ${current.items.length}</span><button type="button" data-cast-action="step" data-key="${current.key}" data-value="next" ${nextDisabled}>→</button></div>` : '';
+    return `<div class="message-chat">${hiddenCount ? `<div class="message-chat-older">이전 ${hiddenCount}개 메시지</div>` : ''}${messages}${controls}</div>`;
+  }
+
+  function messageQuizHtml(slide, slideIndex) {
+    const quiz = quizQueueHtml(slide, slideIndex);
+    if (!quiz) return '';
+    return `<div class="message-quiz-shell"><div class="message-quiz-person">${messageAvatarHtml('ED','이드')}<div><small>ED</small><strong>Quick check</strong></div></div>${quiz}</div>`;
+  }
+
   function castSequenceHtml(slide) {
     const current = currentCastFor(slide);
     if (!current.item) return '';
@@ -627,6 +674,8 @@
     const hasCast = mode !== 'quiet' && castVisible;
     const quizMarkup = hasQuiz ? quizQueueHtml(slide, state.sectionIndex) : '';
     const castMarkup = hasCast ? castSequenceHtml(slide) : '';
+    const messageQuizMarkup = hasQuiz ? messageQuizHtml(slide, state.sectionIndex) : '';
+    const messageCastMarkup = hasCast ? messageCastSequenceHtml(slide) : '';
 
     if (videoActive) {
       if (ui.quizMessage) { ui.quizMessage.innerHTML=''; ui.quizMessage.hidden=true; }
@@ -636,11 +685,11 @@
         if (ui.messageCast) { ui.messageCast.innerHTML=''; ui.messageCast.hidden=true; }
         setMessageDockVisible(false);
       } else {
-        if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
-        if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
+        if (ui.messageQuiz) { ui.messageQuiz.innerHTML=messageQuizMarkup; ui.messageQuiz.hidden=!messageQuizMarkup; hydrateMessagePortraits(ui.messageQuiz); }
+        if (ui.messageCast) { ui.messageCast.innerHTML=messageCastMarkup; ui.messageCast.hidden=!messageCastMarkup; hydrateMessagePortraits(ui.messageCast); }
         if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
         setMessageDockKind(hasQuiz ? 'quiz' : hasCast ? 'cast' : '');
-        setMessageDockVisible(!!(quizMarkup || castMarkup));
+        setMessageDockVisible(!!(messageQuizMarkup || messageCastMarkup));
       }
       ui.stage.dataset.blockType = 'video';
       if (ui.stageStatus) ui.stageStatus.textContent = 'VIDEO';
@@ -657,11 +706,11 @@
     if (mode === 'messages') {
       if (ui.quizMessage) { ui.quizMessage.innerHTML=''; ui.quizMessage.hidden=true; }
       if (ui.castMessage) { ui.castMessage.innerHTML=''; ui.castMessage.hidden=true; }
-      if (ui.messageQuiz) { ui.messageQuiz.innerHTML=quizMarkup; ui.messageQuiz.hidden=!quizMarkup; }
-      if (ui.messageCast) { ui.messageCast.innerHTML=castMarkup; ui.messageCast.hidden=!castMarkup; }
+      if (ui.messageQuiz) { ui.messageQuiz.innerHTML=messageQuizMarkup; ui.messageQuiz.hidden=!messageQuizMarkup; hydrateMessagePortraits(ui.messageQuiz); }
+      if (ui.messageCast) { ui.messageCast.innerHTML=messageCastMarkup; ui.messageCast.hidden=!messageCastMarkup; hydrateMessagePortraits(ui.messageCast); }
       if (ui.messageDockStatus) ui.messageDockStatus.textContent = hasQuiz ? 'QUICK CHECK' : hasCast ? 'MESSAGE' : '';
       setMessageDockKind(hasQuiz ? 'quiz' : hasCast ? 'cast' : '');
-      setMessageDockVisible(!!(quizMarkup || castMarkup));
+      setMessageDockVisible(!!(messageQuizMarkup || messageCastMarkup));
       state.animators.MUTE?.stop(); state.animators.ED?.stop();
       return;
     }
@@ -1055,6 +1104,31 @@
     }
   }
 
+
+  // v0.22.1 mobile swipe navigation. Horizontal gestures only; interactive/scrollable
+  // content keeps ownership of the gesture so tables and controls remain usable.
+  function bindMobileSwipeNavigation() {
+    if (!ui.reader || ui.reader.dataset.swipeBound === '1') return;
+    ui.reader.dataset.swipeBound = '1';
+    let start = null;
+    const coarse = () => window.matchMedia?.('(pointer: coarse)').matches || window.innerWidth <= 760;
+    const excluded = target => target?.closest?.('a,button,input,select,textarea,dialog,.md-table-wrap,.md-figure,.dialogue-stage,.quiz-card,.cloze,pre,code,[contenteditable="true"]');
+    ui.reader.addEventListener('touchstart', e => {
+      if (!coarse() || e.touches.length !== 1 || excluded(e.target)) { start = null; return; }
+      const t=e.touches[0];
+      if (t.clientX < 24 || t.clientX > window.innerWidth - 24) { start = null; return; }
+      start={x:t.clientX,y:t.clientY,time:performance.now()};
+    }, {passive:true});
+    ui.reader.addEventListener('touchend', e => {
+      if (!start || e.changedTouches.length !== 1) { start=null; return; }
+      const t=e.changedTouches[0], dx=t.clientX-start.x, dy=t.clientY-start.y;
+      const elapsed=performance.now()-start.time; start=null;
+      if (elapsed > 900 || Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 1.25) return;
+      if (dx < 0) nextReaderStep(); else prevReaderStep();
+    }, {passive:true});
+    ui.reader.addEventListener('touchcancel', () => { start=null; }, {passive:true});
+  }
+
   function stripForSearch(text) {
     return String(text || '').replace(/\[\[CLOZE\|([^\]|]+)(?:\|[^\]]*)?\]\]/g,'$1').replace(/!\[([^\]]*)\]\([^)]*\)/g,'$1').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/[`*_>#]/g,' ').replace(/\s+/g,' ').trim();
   }
@@ -1174,6 +1248,7 @@
   });
 
   applyPrefs();
+  bindMobileSwipeNavigation();
 
   document.addEventListener('keydown', e => {
     if (e.target && /INPUT|SELECT|TEXTAREA|BUTTON/.test(e.target.tagName)) return;

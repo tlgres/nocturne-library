@@ -3,29 +3,32 @@
   const ns = globalThis.NocturneWeb = globalThis.NocturneWeb || {};
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+  // v0.23.5: lightweight WebP assets already contain a natural forward loop.
+  // Nocturne only controls playback tempo. There is no ping-pong, endpoint
+  // hold, or one-shot mode anymore.
   const CHARACTER_CONFIG = {
     MUTE: {
       displayName: '뮤트',
       folders: ['characters/Mute'],
       motions: {
-        normal:    { file:'normal.gif',   mode:'pingpong', speed:.75, holdStart:180, holdEnd:220 },
-        thinking:  { file:'thinking.gif', mode:'pingpong', speed:.75, holdStart:180, holdEnd:260 },
-        explain:   { file:'explain.gif',  mode:'pingpong', speed:.75, holdStart:120, holdEnd:210 },
-        serious:   { file:'serious.gif',  mode:'pingpong', speed:.75, holdStart:210, holdEnd:280 },
-        realize:   { file:'realize.gif',  mode:'once',     speed:.75, holdEnd:900 },
-        confused:  { file:'confused.gif', mode:'pingpong', speed:.75, holdStart:160, holdEnd:240 }
+        normal:    { file:'normal',   durationScale:1.20 },
+        thinking:  { file:'thinking', durationScale:1.30 },
+        explain:   { file:'explain',  durationScale:1.30 },
+        serious:   { file:'serious',  durationScale:1.30 },
+        realize:   { file:'realize',  durationScale:1.50 },
+        confused:  { file:'confused', durationScale:2.00 }
       }
     },
     ED: {
       displayName: '이드',
       folders: ['characters/Ed'],
       motions: {
-        normal:     { file:'normal.gif',    mode:'pingpong', speed:1, holdStart:180, holdEnd:220 },
-        curious:    { file:'curious.gif',   mode:'pingpong', speed:1, holdStart:150, holdEnd:240 },
-        ask:        { file:'ask.gif',       mode:'pingpong', speed:1, holdStart:180, holdEnd:260 },
-        skeptical:  { file:'skeptical.gif', mode:'pingpong', speed:1, holdStart:160, holdEnd:240 },
-        surprised:  { file:'surprised.gif', mode:'once',     speed:.8, holdEnd:900 },
-        smug:       { file:'smug.gif',      mode:'pingpong', speed:.5, holdStart:150, holdEnd:240 }
+        normal:     { file:'normal',    durationScale:1.00 },
+        curious:    { file:'curious',   durationScale:1.00 },
+        ask:        { file:'ask',       durationScale:1.00 },
+        skeptical:  { file:'skeptical', durationScale:1.00 },
+        surprised:  { file:'surprised', durationScale:1.20 },
+        smug:       { file:'smug',      durationScale:2.00 }
       }
     }
   };
@@ -43,15 +46,27 @@
       this.hasFrame = false;
     }
 
-    async resolveMotion(file) {
-      for (const folder of this.config.folders) {
-        const url = `${folder}/${file}`;
-        try {
-          const response = await fetch(url, {cache:'force-cache'});
-          if (response.ok) return {url, buffer:await response.arrayBuffer()};
-        } catch (_) {}
+    async resolveMotion(fileBase) {
+      const candidates = [
+        {ext:'webp', type:'image/webp'},
+        {ext:'gif',  type:'image/gif'}
+      ];
+      for (const candidate of candidates) {
+        let supported = true;
+        try { supported = await ImageDecoder.isTypeSupported(candidate.type); }
+        catch (_) { supported = false; }
+        if (!supported) continue;
+        for (const folder of this.config.folders) {
+          const url = `${folder}/${fileBase}.${candidate.ext}`;
+          try {
+            const response = await fetch(url, {cache:'force-cache'});
+            if (response.ok) {
+              return {url, type:candidate.type, buffer:await response.arrayBuffer()};
+            }
+          } catch (_) {}
+        }
       }
-      throw new Error(`Missing character asset: ${this.characterId}/${file}`);
+      throw new Error(`Missing character asset: ${this.characterId}/${fileBase}.{webp,gif}`);
     }
 
     clear() {
@@ -71,6 +86,7 @@
       const motion = this.config.motions[motionName] || this.config.motions.normal;
       const resolvedName = this.config.motions[motionName] ? motionName : 'normal';
       if (this.currentMotion === resolvedName && this.animateMode === !!animate && (this.decoder || this.hasFrame)) return;
+
       this.stop();
       const token = this.runToken;
       this.currentMotion = resolvedName;
@@ -83,21 +99,22 @@
       }
 
       try {
-        const supported = await ImageDecoder.isTypeSupported('image/gif');
-        if (!supported) throw new Error('GIF ImageDecoder unsupported');
         const asset = await this.resolveMotion(motion.file);
         if (token !== this.runToken) return;
-        const decoder = new ImageDecoder({data:asset.buffer, type:'image/gif', preferAnimation:true});
+        const decoder = new ImageDecoder({data:asset.buffer, type:asset.type, preferAnimation:true});
         this.decoder = decoder;
         await decoder.tracks.ready;
         const track = decoder.tracks.selectedTrack;
         const frameCount = Math.max(1, track?.frameCount || 1);
         let index = 0;
-        let direction = 1;
 
         while (token === this.runToken) {
           const result = await decoder.decode({frameIndex:index});
-          if (token !== this.runToken) { try { result.image.close(); } catch (_) {} return; }
+          if (token !== this.runToken) {
+            try { result.image.close(); } catch (_) {}
+            return;
+          }
+
           const frame = result.image;
           const w = frame.displayWidth || frame.codedWidth || 1;
           const h = frame.displayHeight || frame.codedHeight || 1;
@@ -105,9 +122,10 @@
             this.canvas.width = w;
             this.canvas.height = h;
           }
-          this.ctx.clearRect(0,0,w,h);
-          this.ctx.drawImage(frame,0,0,w,h);
+          this.ctx.clearRect(0, 0, w, h);
+          this.ctx.drawImage(frame, 0, 0, w, h);
           this.hasFrame = true;
+
           const durationUs = Number(frame.duration) || 100000;
           try { frame.close(); } catch (_) {}
 
@@ -117,26 +135,13 @@
             return;
           }
 
-          let wait = Math.max(45, Math.min(700, (durationUs / 1000) / Math.max(.2, motion.speed || 1)));
-          const atStart = index === 0;
-          const atEnd = index === frameCount - 1;
-          if (atStart) wait += motion.holdStart || 0;
-          if (atEnd) wait += motion.holdEnd || 0;
+          const durationScale = Math.max(.25, Number(motion.durationScale) || 1);
+          const wait = Math.max(24, Math.min(1800, (durationUs / 1000) * durationScale));
           await sleep(wait);
           if (token !== this.runToken) return;
 
-          if (motion.mode === 'once') {
-            if (atEnd) {
-              try { decoder.close(); } catch (_) {}
-              if (this.decoder === decoder) this.decoder = null;
-              return;
-            }
-            index += 1;
-            continue;
-          }
-          if (atEnd) direction = -1;
-          else if (atStart) direction = 1;
-          index = Math.max(0, Math.min(frameCount - 1, index + direction));
+          // Natural forward loop only. The asset itself owns the seam.
+          index = (index + 1) % frameCount;
         }
       } catch (_) {
         if (token !== this.runToken) return;

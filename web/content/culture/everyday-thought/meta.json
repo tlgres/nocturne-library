@@ -8,12 +8,21 @@
   "status": "ongoing",
   "kind": "diary",
   "createdAt": "2026-11-01",
-  "updatedAt": "2026-11-01",
+  "updatedAt": "2026-11-13",
   "lectures": [
     {
       "id": "01",
       "file": "01.md",
       "title": "인간은 기계장치다"
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "ED & MUTE Animation QA — 경량화의 대가",
+      "createdAt": "2026-11-13",
+      "updatedAt": "2026-11-13",
+      "characters": 2958,
+      "readMinutes": 6
     }
   ]
 }

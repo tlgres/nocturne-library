@@ -680,40 +680,41 @@ button:disabled { opacity: .26; cursor: default; }
 .character-layer.is-listener {
   opacity: .64;
   filter: saturate(.86) brightness(.90);
-  transform: scale(.82);
+  transform: none;
 }
 .character-layer.is-active-speaker {
   z-index: 6;
   opacity: 1;
   filter: none;
-  transform: scale(.91);
+  transform: none;
 }
 .character-stage.is-dialogue-observer .character-layer {
   opacity: .52;
   filter: saturate(.78) brightness(.87);
-  transform: scale(.73);
+  transform: none;
 }
 .character-stage.is-dialogue-observer .character-layer.mute { left: 2%; }
 .character-stage.is-dialogue-observer .character-layer.ed { right: 0; }
-/* CAST does not move the cast. QUIZ alone makes room above. */
-.character-stage.has-quiz .character-layer { height: 59%; bottom: 2%; }
-.character-stage.has-quiz .character-layer.is-active-speaker { transform: scale(.83); }
-.character-stage.has-quiz .character-layer.is-listener { transform: scale(.76); opacity: .58; }
+/* Character size is intentionally stable across NORMAL / CAST / QUIZ / DIALOGUE.
+   Interaction states change emphasis, not physical scale. */
+.character-stage.has-quiz .character-layer { bottom: 2.5%; }
+.character-stage.has-quiz .character-layer.is-active-speaker { transform: none; }
+.character-stage.has-quiz .character-layer.is-listener { transform: none; opacity: .58; }
 .character-canvas {
   position: absolute;
   left: 50%;
   bottom: 0;
-  max-width: 100%;
-  max-height: 100%;
+  top: auto;
+  right: auto;
   width: auto;
-  height: auto;
+  height: 66%;
+  max-width: none;
+  object-fit: unset;
   transform: translateX(-50%);
-  object-fit: contain;
-  filter: drop-shadow(0 16px 18px rgba(0,0,0,.24));
-}
-.character-canvas[data-character-canvas="MUTE"] {
-  transform: translateX(-50%) scale(.88);
   transform-origin: 50% 100%;
+  filter: drop-shadow(0 16px 18px rgba(0,0,0,.24));
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .character-canvas[data-missing="true"] { opacity: 0; }
 .character-fallback {
@@ -1417,9 +1418,9 @@ body.immersive .progress button { height: 20px; }
 
 /* Make the quiz unmistakably visible, while still leaving the lower room to the cast. */
 .character-stage.has-quiz .quiz-message { display: block; }
-.character-stage.has-quiz .character-layer { height: 57%; bottom: 1.5%; }
-.character-stage.has-quiz .character-layer.is-active-speaker { transform: scale(.82); }
-.character-stage.has-quiz .character-layer.is-listener { transform: scale(.75); opacity: .62; }
+.character-stage.has-quiz .character-layer { bottom: 2.5%; }
+.character-stage.has-quiz .character-layer.is-active-speaker { transform: none; }
+.character-stage.has-quiz .character-layer.is-listener { transform: none; opacity: .62; }
 
 /* Dialogue uses the user's persisted global preference; size follows reader settings. */
 .dialogue-text { font-size: calc(var(--reader-size) * .92); }
@@ -1774,3 +1775,39 @@ body.video-stage-active.messages-mode .study-grid,body.video-stage-active.quiet-
   .top-actions{display:flex;flex-wrap:wrap;justify-content:flex-start}.select-wrap{flex:1 1 42%}.chrome-button{height:32px}.chrome-icon-button{width:32px;min-width:32px}
   .reader-tool-row{grid-template-columns:28px minmax(0,1fr);}.reader-tool-row small{display:none}
 }
+
+
+/* v0.22.1 mobile reading hotfix: contain wide content and hint table scrolling */
+.study-grid,.study-column,.reader,.section,.section-body{min-width:0;}
+.section,.section-body{max-width:100%;}
+.md-table-wrap{position:relative;box-sizing:border-box;max-width:100%;min-width:0;contain:inline-size; -webkit-overflow-scrolling:touch;}
+.md-table-wrap::after{content:"";position:sticky;display:block;pointer-events:none;right:0;bottom:0;width:34px;height:4px;margin-left:auto;margin-top:-4px;background:linear-gradient(90deg,transparent,rgba(179,157,198,.24));opacity:.72;}
+@media(max-width:700px){
+  .study-grid,.study-column,.reader,.section,.section-body{width:100%;max-width:100%;min-width:0;}
+  .reader{overflow-x:hidden;}
+  .section-body>*{max-width:100%;}
+  .md-table-wrap{width:100%;max-width:100%;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;}
+  .md-table{width:max-content;min-width:460px;max-width:none;}
+}
+
+/* v0.23 Messages Polish -------------------------------------------------- */
+.message-cast,.message-quiz{min-width:0}
+.message-chat{display:grid;gap:8px;min-width:0}
+.message-chat-older{text-align:center;color:#66717d;font:600 8px/1.3 system-ui,sans-serif;letter-spacing:.08em;padding:1px 0 2px}
+.message-chat-row{display:grid;grid-template-columns:36px minmax(0,1fr);gap:8px;align-items:end;max-width:94%}
+.message-chat-row.from-ed{grid-template-columns:minmax(0,1fr) 36px;margin-left:auto}
+.message-chat-row.from-ed .message-avatar{grid-column:2}.message-chat-row.from-ed .message-chat-bubble{grid-column:1;grid-row:1;text-align:left}
+.message-avatar{display:grid;justify-items:center;align-self:end;gap:3px;width:36px;min-width:36px}
+.message-avatar img{display:block;width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.12);background:#11131c;box-shadow:0 5px 15px rgba(0,0,0,.28)}
+.message-avatar-name{font:600 7px/1 system-ui,sans-serif;color:#777d89;white-space:nowrap}
+.message-chat-bubble{min-width:0;padding:8px 10px;border:1px solid rgba(255,255,255,.07);border-radius:12px 12px 12px 4px;background:rgba(10,15,23,.62);box-shadow:0 6px 18px rgba(0,0,0,.16)}
+.from-ed .message-chat-bubble{border-radius:12px 12px 4px 12px;background:rgba(38,24,45,.58);border-color:rgba(192,144,204,.11)}
+.message-chat-name{margin-bottom:3px;color:#8fa8bb;font:650 8px/1.2 system-ui,sans-serif;letter-spacing:.03em}.from-ed .message-chat-name{color:#c3a0ca}
+.message-chat-text{font-size:.92em;line-height:1.58;color:#d7d7de;overflow-wrap:anywhere}
+.message-chat-text p{margin:0}.message-chat-controls{display:flex;justify-content:center;align-items:center;gap:9px;padding-top:2px;color:#7b7f89;font:600 8px/1 system-ui,sans-serif}
+.message-chat-controls button{width:27px;height:23px;padding:0;border:1px solid rgba(255,255,255,.075);border-radius:7px;background:rgba(255,255,255,.025);color:#969aa5;cursor:pointer}.message-chat-controls button:disabled{opacity:.28;cursor:default}
+.message-quiz-shell{display:grid;gap:8px}.message-quiz-person{display:flex;align-items:center;gap:8px;padding:0 2px}.message-quiz-person .message-avatar{width:34px;min-width:34px}.message-quiz-person .message-avatar-name{display:none}.message-quiz-person img{width:30px;height:30px}.message-quiz-person>div{display:grid;gap:1px}.message-quiz-person small{color:#a88ab2;font:700 7px/1 system-ui,sans-serif;letter-spacing:.13em}.message-quiz-person strong{color:#d7c5dd;font:650 10px/1.2 system-ui,sans-serif;letter-spacing:.02em}
+.message-dock[data-kind="cast"]{width:min(390px,calc(100vw - 28px))}.message-dock[data-kind="quiz"]{width:min(430px,calc(100vw - 28px))}
+.message-dock[data-kind="cast"] .cast-bubble{display:none!important}
+body.messages-mode #companion-toggle{box-shadow:0 0 20px rgba(93,151,178,.08)}
+@media(max-width:700px){.message-chat-row{max-width:97%;grid-template-columns:32px minmax(0,1fr);gap:6px}.message-chat-row.from-ed{grid-template-columns:minmax(0,1fr) 32px}.message-avatar{width:32px;min-width:32px}.message-avatar img{width:29px;height:29px}.message-chat-bubble{padding:7px 9px}.message-chat-text{font-size:.9em}.message-dock[data-kind="cast"],.message-dock[data-kind="quiz"]{width:calc(100vw - 20px)}}

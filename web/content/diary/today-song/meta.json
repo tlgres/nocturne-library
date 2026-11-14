@@ -7,7 +7,7 @@
   "status": "ongoing",
   "kind": "diary",
   "createdAt": "2026-11-11",
-  "updatedAt": "2026-11-11",
+  "updatedAt": "2026-11-14",
   "lectures": [
     {
       "id": "01",
@@ -22,5 +22,7 @@
         "url": "https://youtu.be/uALsg4aWKB0?si=8nxe5lRIZk5UfxG4"
       }
     }
-  ]
+  ],
+  "prologue": "무언가를 하다가 음악 하나를 틀었다. \n그냥 흘려보내기에는 조금 아까워서, 곡이 끝나기 전에 몇 자 적어둔다.\n\n음악사도 조금, 작곡가의 사정도 조금, \n들으면서 떠오른 쓸데없는 생각도 조금. \n\n대단한 감상법은 없다. \n단지, 오늘은 이것을 들었을 뿐이다.",
+  "cover": "assets/cover.png"
 }

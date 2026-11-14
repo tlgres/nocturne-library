@@ -9,3 +9,11 @@
 .lecture-time{font-size:8px;color:#8fa2b2;border:1px solid rgba(143,162,178,.22);border-radius:4px;padding:3px 5px;line-height:1}
 .lecture-read{font-size:10px;color:#768b9d}
 @media(max-width:760px){.lecture-link{grid-template-columns:34px minmax(0,1fr) auto}.lecture-link-tail{display:flex!important}.lecture-date{display:none}.lecture-time{font-size:8px;padding:3px 4px}.lecture-read{display:none}}
+
+
+/* v0.22.1 mobile book TOC title visibility hotfix */
+@media(max-width:760px){
+  .lecture-link .lecture-title-meta{display:block!important;min-width:0;}
+  .lecture-link .lecture-title-meta strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .lecture-link>.lecture-link-tail{display:flex!important;}
+}

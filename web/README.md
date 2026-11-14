@@ -1,13 +1,14 @@
-# Web Reader Phase 1
+# Web renderer Phase 4
 
-`index.html`은 static hosting만으로 동작한다. 별도 npm/build step이 없다.
+Run from the repository root:
 
-현재 Reader가 직접 사용하는 파일:
+```bash
+python -m http.server 8000
+```
 
-- `../core.js` — Nocturne Format parser
-- `categories.json` — canonical 12 categories
-- `library.json` — published series index
-- `content/**/meta.json` — series metadata
-- `content/**/*.md` — lecture sources
+Then open `http://localhost:8000/web/`.
 
-GitHub Pages에서 repository root를 배포하면 `/web/`가 Reader entry point가 된다.
+Character GIFs are optional. If present, place them under `web/characters/Mute/` and `web/characters/Ed/`.
+
+## Messages portraits (v0.23)
+Messages mode uses tiny static portraits. Bundled SVG fallbacks live at `characters/Mute/message.svg` and `characters/Ed/message.svg`. Optional `message.webp` files in the same folders are preferred when present. Animated motion GIFs are only fetched when Companions mode actually renders them.
