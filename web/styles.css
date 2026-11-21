@@ -171,7 +171,8 @@ h1 {
 }
 #block-state { color: #8e819d; }
 .progress {
-  --progress-pct: 0%;
+  --progress-ratio: 0;
+  --progress-edge: 5px;
   position: relative;
   height: 28px;
   display: flex;
@@ -181,7 +182,7 @@ h1 {
 .progress::after {
   content: "";
   position: absolute;
-  left: 5px;
+  left: var(--progress-edge);
   top: 50%;
   height: 2px;
   transform: translateY(-50%);
@@ -189,15 +190,16 @@ h1 {
   pointer-events: none;
 }
 .progress::before {
-  right: 5px;
+  right: var(--progress-edge);
   background: rgba(190, 181, 204, .11);
 }
 .progress::after {
-  width: clamp(0px, calc(var(--progress-pct) - 5px), calc(100% - 10px));
-  max-width: calc(100% - 10px);
+  right: var(--progress-edge);
   background: linear-gradient(90deg, #756384, #a188b9 72%, #c6afd8);
   box-shadow: 0 0 11px rgba(160, 121, 192, .20);
-  transition: width .24s ease;
+  transform-origin: left center;
+  transform: translateY(-50%) scaleX(var(--progress-ratio));
+  transition: transform .24s ease;
 }
 .progress button {
   position: relative;
@@ -1727,8 +1729,8 @@ body.video-stage-active.messages-mode .study-grid,body.video-stage-active.quiet-
 .window-constellation{
   position:absolute;z-index:1;left:50%;top:49%;width:92%;height:92%;object-fit:contain;
   transform:translate(-50%,-50%) scale(calc(.90 + var(--constellation-progress,0) * .08));
-  opacity:calc(.07 + var(--constellation-progress,0) * .15);
-  filter:brightness(1.55) drop-shadow(0 0 5px rgba(163,197,231,.28)) drop-shadow(0 0 15px rgba(106,154,205,.13));
+  opacity:calc(.16 + var(--constellation-progress,0) * .26);
+  filter:invert(1) brightness(1.18) drop-shadow(0 0 7px rgba(180,210,240,.42)) drop-shadow(0 0 20px rgba(118,165,215,.24));
   transition:opacity .45s ease,transform .45s ease;pointer-events:none;
 }
 .night-window .star{z-index:2}
@@ -1816,3 +1818,133 @@ body.video-stage-active.messages-mode .study-grid,body.video-stage-active.quiet-
 .message-dock[data-kind="cast"] .cast-bubble{display:none!important}
 body.messages-mode #companion-toggle{box-shadow:0 0 20px rgba(93,151,178,.08)}
 @media(max-width:700px){.message-chat-row{max-width:97%;grid-template-columns:32px minmax(0,1fr);gap:6px}.message-chat-row.from-ed{grid-template-columns:minmax(0,1fr) 32px}.message-avatar{width:32px;min-width:32px}.message-avatar img{width:29px;height:29px}.message-chat-bubble{padding:7px 9px}.message-chat-text{font-size:.9em}.message-dock[data-kind="cast"],.message-dock[data-kind="quiz"]{width:calc(100vw - 20px)}}
+
+/* v0.24 Study UI consolidation --------------------------------------- */
+.compact-topbar {
+  min-height: 42px;
+  padding: 4px 2px 7px;
+  gap: 14px;
+  align-items: center;
+  position: relative;
+  z-index: 45;
+}
+.nav-cluster { min-width: 0; display:flex; align-items:center; gap:7px; flex:1 1 auto; }
+.compact-context { min-width:0; display:grid; gap:2px; margin-left:3px; }
+.compact-context-meta { min-width:0; color:#746e7c; font:600 9px/1.25 system-ui,sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.compact-brand { color:#958b9f; letter-spacing:.08em; }
+.compact-dot { margin:0 6px; opacity:.35; }
+.compact-context .series-book-link { color:#8f8798; text-decoration:none; }
+.compact-context .series-book-link:hover { color:#bbb0c5; }
+.compact-lecture { min-width:0; display:flex; align-items:baseline; gap:8px; white-space:nowrap; overflow:hidden; }
+.compact-lecture > span { flex:0 0 auto; color:#676171; font:700 8px/1 system-ui,sans-serif; letter-spacing:.13em; text-transform:uppercase; }
+.compact-lecture > strong { min-width:0; overflow:hidden; text-overflow:ellipsis; color:#d9d3df; font:600 13px/1.35 var(--reader-font); letter-spacing:-.012em; }
+.compact-description { display:none; }
+.compact-actions { align-items:center; flex:0 0 auto; gap:6px; flex-wrap:nowrap; }
+.compact-topbar .chrome-button { height:32px; }
+.compact-topbar .chrome-icon-button { width:32px; min-width:32px; }
+.compact-progress { padding:2px 5px 5px; }
+.compact-progress .progress-meta { margin:0 2px 0; font-size:8px; }
+.compact-progress .progress { height:22px; }
+.compact-progress .progress button { height:22px; }
+
+/* The old Focus layer is retired: compact Study is the only layout. */
+body.immersive .topbar .identity, body.immersive .lecture-copy { display:initial; }
+body.immersive .topbar, body.immersive .lecture-head, body.immersive .progress-box,
+body.immersive .progress, body.immersive .progress button { all:unset; }
+
+/* Library navigator */
+.library-navigator[hidden] { display:none !important; }
+.library-navigator { position:fixed; inset:0; z-index:180; }
+.library-navigator-backdrop { position:absolute; inset:0; border:0; background:rgba(4,4,9,.66); backdrop-filter:blur(5px); cursor:default; }
+.library-navigator-panel {
+  position:absolute; inset:0 auto 0 0; width:min(390px,92vw); padding:18px 14px 22px;
+  overflow:auto; overscroll-behavior:contain; background:linear-gradient(180deg,rgba(16,14,22,.99),rgba(8,9,15,.995));
+  border-right:1px solid rgba(196,177,218,.18); box-shadow:30px 0 80px rgba(0,0,0,.45);
+  transform:translateX(-18px); opacity:0; transition:transform .22s ease, opacity .22s ease;
+}
+.library-navigator.is-open .library-navigator-panel { transform:translateX(0); opacity:1; }
+.library-navigator-header { display:flex; align-items:center; justify-content:space-between; padding:3px 4px 14px; border-bottom:1px solid rgba(194,179,211,.11); }
+.library-navigator-header div { display:grid; gap:4px; }
+.library-navigator-header small { color:#70687a; font:700 8px/1 system-ui,sans-serif; letter-spacing:.2em; }
+.library-navigator-header strong { color:#ddd5e2; font:600 16px/1.2 var(--reader-font); }
+.library-navigator-header button { width:30px; height:30px; border:1px solid rgba(190,175,208,.12); border-radius:8px; background:rgba(255,255,255,.025); color:#948b9d; cursor:pointer; }
+.library-navigator-home { display:flex; align-items:center; gap:9px; margin:12px 2px; padding:9px 10px; border:1px solid rgba(190,175,208,.09); border-radius:10px; color:#aea5b7; text-decoration:none; background:rgba(255,255,255,.018); font-size:11px; }
+.library-nav-group, .library-nav-series-item { border:0; }
+.library-nav-group > summary, .library-nav-series-item > summary { list-style:none; cursor:pointer; user-select:none; }
+.library-nav-group > summary::-webkit-details-marker, .library-nav-series-item > summary::-webkit-details-marker { display:none; }
+.library-nav-group > summary { display:flex; justify-content:space-between; align-items:center; padding:11px 8px 8px; color:#92899b; font:700 10px/1.2 system-ui,sans-serif; letter-spacing:.06em; }
+.library-nav-group > summary small { color:#5f5967; font-size:8px; }
+.library-nav-series { display:grid; gap:4px; }
+.library-nav-series-item { border:1px solid rgba(190,175,208,.075); border-radius:10px; background:rgba(255,255,255,.012); overflow:hidden; }
+.library-nav-series-item.current { border-color:rgba(174,142,200,.22); background:rgba(126,91,153,.055); }
+.library-nav-series-item > summary { display:flex; justify-content:space-between; gap:10px; padding:9px 10px; color:#bbb2c2; font-size:11px; }
+.library-nav-series-item > summary span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.library-nav-series-item > summary small { flex:0 0 auto; color:#6f6877; font-size:8px; }
+.library-nav-lectures { display:grid; padding:0 5px 6px; }
+.library-nav-lecture { border:0; border-radius:7px; background:transparent; color:#8d8595; display:grid; grid-template-columns:26px minmax(0,1fr); gap:5px; align-items:center; text-align:left; padding:7px 7px; cursor:pointer; }
+.library-nav-lecture span { color:#5e5865; font:700 8px/1 system-ui,sans-serif; }
+.library-nav-lecture strong { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font:500 10px/1.35 var(--reader-font); }
+.library-nav-lecture:hover { background:rgba(255,255,255,.03); color:#c9c0d0; }
+.library-nav-lecture.current { background:rgba(139,103,166,.12); color:#dfd4e7; }
+body.library-nav-open { overflow:hidden; }
+
+/* Lecture opening: a brief observatory-stage cue, never used for sections. */
+.lecture-transition[hidden] { display:none !important; }
+.lecture-transition { position:fixed; inset:0; z-index:170; pointer-events:none; display:grid; place-items:center; overflow:hidden; background:rgba(5,5,11,.1); opacity:0; }
+.lecture-transition-sky { position:absolute; inset:-12%; background:radial-gradient(circle at 50% 48%,rgba(110,79,139,.16),rgba(9,9,17,.76) 38%,rgba(4,5,10,.94) 70%); opacity:0; }
+.lecture-transition-constellation { position:absolute; width:min(62vmin,620px); height:min(62vmin,620px); object-fit:contain; opacity:0; filter:invert(1) brightness(1.12) drop-shadow(0 0 15px rgba(194,170,226,.34)) drop-shadow(0 0 42px rgba(122,92,158,.22)); }
+.lecture-transition-copy { position:relative; z-index:2; width:min(700px,78vw); display:grid; gap:10px; text-align:center; opacity:0; transform:translateY(12px); }
+.lecture-transition-copy small { color:#8f829d; font:700 9px/1 system-ui,sans-serif; letter-spacing:.22em; }
+.lecture-transition-copy strong { color:#eee7f2; font:500 clamp(18px,2.4vw,30px)/1.35 var(--reader-font); text-shadow:0 0 28px rgba(206,181,231,.13); }
+.lecture-transition.is-active { animation:lecture-curtain 3s ease both; }
+.lecture-transition.is-active .lecture-transition-sky { animation:lecture-sky 3s ease both; }
+.lecture-transition.is-active .lecture-transition-constellation { animation:lecture-constellation 3s cubic-bezier(.2,.7,.2,1) both; }
+.lecture-transition.is-active .lecture-transition-copy { animation:lecture-title-cue 3s ease both; }
+@keyframes lecture-curtain { 0%{opacity:0} 10%{opacity:1;background:rgba(5,5,11,.84)} 84%{opacity:1;background:rgba(5,5,11,.80)} 100%{opacity:0} }
+@keyframes lecture-sky { 0%{opacity:0;transform:scale(.94)} 14%{opacity:1} 84%{opacity:.94} 100%{opacity:0;transform:scale(1.05)} }
+@keyframes lecture-constellation { 0%{opacity:0;transform:scale(.82) rotate(-1deg)} 16%{opacity:.82} 78%{opacity:.66;transform:scale(1)} 100%{opacity:0;transform:scale(1.07)} }
+@keyframes lecture-title-cue { 0%,10%{opacity:0;transform:translateY(12px)} 22%,80%{opacity:1;transform:translateY(0)} 100%{opacity:0;transform:translateY(-5px)} }
+.study-grid.lecture-enter .study-column { animation:lecture-column-enter .38s ease both; }
+.study-grid.lecture-enter .night-window { animation:lecture-window-pulse .38s ease both; }
+
+@media (max-width: 900px) {
+  .compact-topbar { align-items:flex-start; padding-top:5px; }
+  .compact-context-meta .compact-brand, .compact-context-meta .compact-dot { display:none; }
+  .compact-lecture > strong { font-size:11px; }
+  .compact-actions { gap:4px; }
+  .compact-actions .chrome-icon-button { width:30px; min-width:30px; }
+  .compact-actions .chrome-button { height:30px; }
+  .compact-actions #reader-settings-toggle { width:34px; min-width:34px; padding-inline:0; }
+  .compact-progress { padding-top:0; }
+}
+@media (max-width: 620px) {
+  .compact-topbar { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:5px; }
+  .nav-cluster { gap:4px; }
+  .nav-cluster > .chrome-icon-button { width:29px; min-width:29px; height:29px; }
+  .compact-context-meta { font-size:8px; }
+  .compact-lecture > span { display:none; }
+  .compact-lecture > strong { font-size:10px; }
+  .compact-actions { gap:2px; }
+  .compact-actions .chrome-button { width:27px; min-width:27px; height:29px; padding:0; font-size:11px; }
+  .library-navigator-panel { width:min(350px,94vw); }
+  .lecture-transition-copy { width:82vw; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .library-navigator-panel { transition:none; }
+  .lecture-transition.is-active, .lecture-transition.is-active .lecture-transition-sky,
+  .lecture-transition.is-active .lecture-transition-constellation, .lecture-transition.is-active .lecture-transition-copy { animation:none; }
+  .lecture-transition.is-active { opacity:.9; }
+  .lecture-transition.is-active .lecture-transition-copy { opacity:1; transform:none; }
+}
+
+/* Guard against legacy responsive topbar rules. */
+.compact-topbar { flex-direction:row; align-items:center; }
+.compact-actions { display:flex; width:auto; justify-content:flex-end; }
+@media (max-width:900px) {
+  .compact-topbar { flex-direction:row; align-items:flex-start; gap:8px; }
+  .compact-actions { display:flex; width:auto; justify-content:flex-end; }
+}
+@media (max-width:620px) {
+  .compact-topbar { display:grid; grid-template-columns:minmax(0,1fr) auto; }
+  .compact-actions { display:flex; width:auto; justify-content:flex-end; }
+}

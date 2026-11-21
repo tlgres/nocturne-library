@@ -7,19 +7,58 @@
   "status": "ongoing",
   "kind": "diary",
   "createdAt": "2026-11-11",
-  "updatedAt": "2026-11-14",
+  "updatedAt": "2026-11-20",
   "lectures": [
     {
       "id": "01",
       "file": "01.md",
-      "title": "Paganini: Caprice No. 24 — 한 줄의 선율이 스물네 개의 얼굴을 갖는 법",
+      "title": "Paganini — Caprice No. 24: 한 줄의 선율이 스물네 개의 얼굴을 갖는 법",
       "createdAt": "2026-11-11",
-      "updatedAt": "2026-11-11",
+      "updatedAt": "2026-11-17",
       "characters": 5131,
       "readMinutes": 10,
       "video": {
         "type": "youtube",
         "url": "https://youtu.be/uALsg4aWKB0?si=8nxe5lRIZk5UfxG4"
+      }
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "Tchaikovsky — Serenade for Strings, Op. 48: 따뜻함은 어떻게 합주가 되는가",
+      "createdAt": "2026-11-16",
+      "updatedAt": "2026-11-16",
+      "characters": 3661,
+      "readMinutes": 7,
+      "video": {
+        "type": "youtube",
+        "url": "https://youtu.be/MICksKeZoJU?si=uARlWz2T4FSI4CjQ"
+      }
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "Tchaikovsky — The Seasons, Op. 37a: 한 해를 방 안에 들여놓는 법",
+      "createdAt": "2026-11-17",
+      "updatedAt": "2026-11-17",
+      "characters": 3935,
+      "readMinutes": 8,
+      "video": {
+        "type": "youtube",
+        "url": "https://youtu.be/3cb4lVycu94?si=Drg2KYerg7ApyKCM"
+      }
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "Borodin — String Quartet No. 2: 네 사람이 조용히 사랑을 말하는 법",
+      "createdAt": "2026-11-19",
+      "updatedAt": "2026-11-20",
+      "characters": 5382,
+      "readMinutes": 10,
+      "video": {
+        "type": "youtube",
+        "url": "https://youtu.be/2YAzUC6LzNk?si=Qu1maKnZRlS5nEn2"
       }
     }
   ],

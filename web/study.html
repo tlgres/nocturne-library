@@ -7,40 +7,57 @@
   <meta name="theme-color" content="#09090e">
   <title>Study · 해체된 의미의 서재</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.23.6">
+  <link rel="stylesheet" href="styles.css?v=0.24.1">
   <link rel="icon" type="image/png" href="assets/nata.png">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"></div>
   <main class="shell">
-    <header class="topbar">
-      <div class="identity">
-        <div class="brand">해체된 의미의 서재</div>
-        <div class="crumbs"><span id="category-name">서재</span><span class="sep">/</span><a id="series-name" class="series-book-link" href="#">Loading…</a></div>
-      </div>
-      <div class="top-actions">
+    <header class="topbar compact-topbar">
+      <div class="nav-cluster">
+        <button id="library-navigator-toggle" class="chrome-button chrome-icon-button" type="button" title="서재 탐색" aria-label="서재 탐색" aria-expanded="false">☷</button>
         <a class="chrome-button chrome-icon-button library-home-link" href="index.html" title="홈으로 돌아가기" aria-label="홈으로 돌아가기">🏠</a>
-        <label class="select-wrap category-select-wrap" title="카테고리 선택">
-          <span>분류</span>
-          <select id="category-select" aria-label="카테고리 선택"></select>
-        </label>
-        <label class="select-wrap" title="시리즈 선택">
-          <span>시리즈</span>
-          <select id="series-select" aria-label="시리즈 선택"></select>
-        </label>
-        <label class="select-wrap" title="강의 선택">
-          <span>강의</span>
-          <select id="lecture-select" aria-label="강의 선택"></select>
-        </label>
+        <div class="compact-context" aria-live="polite">
+          <div class="compact-context-meta"><span class="compact-brand">해체된 의미의 서재</span><span class="compact-dot">·</span><span id="category-name">서재</span><span class="sep">/</span><a id="series-name" class="series-book-link" href="#">Loading…</a></div>
+          <div class="compact-lecture"><span id="lecture-index">Lecture</span><strong id="lecture-title">Loading…</strong></div>
+          <p id="series-description" class="series-description compact-description"></p>
+        </div>
+      </div>
+      <div class="top-actions compact-actions">
         <button id="study-search-toggle" class="chrome-button chrome-icon-button" type="button" title="현재 강의 또는 시리즈 본문 검색" aria-label="본문 검색">🔍</button>
-        <button id="lecture-toc-toggle" class="chrome-button chrome-icon-button" type="button" title="이 강의의 목차" aria-label="강의 목차">☰</button>
+        <button id="lecture-toc-toggle" class="chrome-button chrome-icon-button" type="button" title="이 강의의 목차" aria-label="강의 목차">≡</button>
         <button id="bookmark-toggle" class="chrome-button chrome-icon-button" type="button" title="책갈피" aria-label="책갈피">☆</button>
         <button id="lecture-note-toggle" class="chrome-button chrome-icon-button" type="button" title="이 강의의 개인 메모" aria-label="개인 메모">📝</button>
-        <button id="immersive-toggle" class="chrome-button" type="button" aria-pressed="false" title="집중 모드">Focus</button>
         <button id="companion-toggle" class="chrome-button chrome-icon-button" type="button" aria-pressed="true" title="상호작용 표시 방식" aria-label="상호작용 표시 방식">💬</button>
         <button id="reader-settings-toggle" class="chrome-button" type="button" aria-expanded="false" title="읽기 설정">Aa</button>
       </div>
     </header>
+
+    <section class="compact-progress" aria-label="강의 진행">
+      <div class="progress-meta"><span id="progress-label">0 / 0</span><span id="block-state">NORMAL</span></div>
+      <div id="progress" class="progress" aria-label="강의 진행도"></div>
+    </section>
+
+    <aside id="library-navigator" class="library-navigator" hidden aria-label="서재 탐색">
+      <button id="library-navigator-backdrop" class="library-navigator-backdrop" type="button" aria-label="서재 탐색 닫기"></button>
+      <div class="library-navigator-panel">
+        <header class="library-navigator-header">
+          <div><small>LIBRARY</small><strong>해체된 의미의 서재</strong></div>
+          <button id="library-navigator-close" type="button" aria-label="닫기">×</button>
+        </header>
+        <a class="library-navigator-home" href="index.html">🏠 <span>Front로 돌아가기</span></a>
+        <div id="library-navigator-tree" class="library-navigator-tree"></div>
+      </div>
+    </aside>
+
+    <div id="lecture-transition" class="lecture-transition" hidden aria-hidden="true">
+      <div class="lecture-transition-sky"></div>
+      <img id="lecture-transition-constellation" class="lecture-transition-constellation" alt="">
+      <div class="lecture-transition-copy">
+        <small id="lecture-transition-kicker">NEXT LECTURE</small>
+        <strong id="lecture-transition-title"></strong>
+      </div>
+    </div>
 
     <section id="reader-settings" class="reader-settings" hidden>
       <label><span>Font</span><select id="reader-font-select">
@@ -58,19 +75,9 @@
       <label><span>Width</span><select id="reader-width-select"><option value="narrow">좁게</option><option value="default">기본</option><option value="wide">넓게</option></select></label>
       <label><span>Paragraph</span><select id="reader-paragraph-select"><option value="compact">촘촘</option><option value="default">기본</option><option value="wide">넓게</option></select></label>
       <label><span>Links</span><select id="reader-link-mode"><option value="show">링크 표시</option><option value="text">텍스트만</option></select></label>
+      <label><span>BGM</span><select id="reader-bgm-mode"><option value="off">끄기</option><option value="on">재생</option></select></label>
+      <label><span>BGM volume</span><input id="reader-bgm-volume" type="range" min="0" max="100" step="1"><output id="reader-bgm-volume-value"></output></label>
       <button id="reader-settings-reset" type="button">Reset</button>
-    </section>
-
-    <section class="lecture-head">
-      <div class="lecture-copy">
-        <div class="eyebrow" id="lecture-index">Lecture</div>
-        <h1 id="lecture-title">Loading…</h1>
-        <p id="series-description" class="series-description"></p>
-      </div>
-      <div class="progress-box">
-        <div class="progress-meta"><span id="progress-label">0 / 0</span><span id="block-state">NORMAL</span></div>
-        <div id="progress" class="progress" aria-label="강의 진행도"></div>
-      </div>
     </section>
 
     <div id="notice" class="notice" hidden></div>
@@ -195,7 +202,7 @@
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script src="core.js?v=0.21.1"></script>
-  <script src="character.js?v=0.23.6"></script>
-  <script src="app.js?v=0.23.6"></script>
+  <script src="character.js?v=0.24.1"></script>
+  <script src="app.js?v=0.24.1"></script>
 </body>
 </html>

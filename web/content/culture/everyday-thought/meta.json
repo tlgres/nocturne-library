@@ -8,7 +8,7 @@
   "status": "ongoing",
   "kind": "diary",
   "createdAt": "2026-11-01",
-  "updatedAt": "2026-11-13",
+  "updatedAt": "2026-11-20",
   "lectures": [
     {
       "id": "01",
@@ -23,6 +23,15 @@
       "updatedAt": "2026-11-13",
       "characters": 2958,
       "readMinutes": 6
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "언젠가 들은 이야기",
+      "createdAt": "2026-11-20",
+      "updatedAt": "2026-11-20",
+      "characters": 12441,
+      "readMinutes": 23
     }
   ]
 }

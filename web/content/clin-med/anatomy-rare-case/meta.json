@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "id": "anatomy-rare-case",
+  "title": "몸의 예외들 : 해부학적 희귀질환 증례집",
+  "category": "clin-med",
+  "description": "정상해부학의 규칙이 드물게 어긋나는 순간들을 따라가며, 기형·변이·희귀질환의 구조와 임상적 결과를 실제 증례처럼 읽는다.",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-11-16",
+  "updatedAt": "2026-11-17",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 경부와 종격동 — 목 안의 좁은 길",
+      "createdAt": "2026-11-16",
+      "updatedAt": "2026-11-16",
+      "characters": 22164,
+      "readMinutes": 41
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 흉곽과 횡격막 — 경계를 넘어온 장기들",
+      "createdAt": "2026-11-16",
+      "updatedAt": "2026-11-16",
+      "characters": 23226,
+      "readMinutes": 43
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "3강. 상복부 — 혈관과 장기 사이에 끼이다",
+      "createdAt": "2026-11-16",
+      "updatedAt": "2026-11-16",
+      "characters": 24440,
+      "readMinutes": 45
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "4강. 후복막 — 보이지 않는 공간을 따라",
+      "createdAt": "2026-11-16",
+      "updatedAt": "2026-11-16",
+      "characters": 26670,
+      "readMinutes": 49
+    },
+    {
+      "id": "05",
+      "file": "05.md",
+      "title": "5강. 소장과 장간막 — 잘못 접힌 장의 지도",
+      "createdAt": "2026-11-17",
+      "updatedAt": "2026-11-17",
+      "characters": 25324,
+      "readMinutes": 47
+    }
+  ],
+  "prologue": "인체는 놀라울 만큼 일정한 설계도를 따른다.\n그럼에도, 언제나 그대로 만들어지는 것은 아니다. \n\n혈관 하나가 다른 길을 택하고, 장기가 반대편에 놓이며, \n발생 과정의 작은 문 하나가 닫히지 않는 순간 전혀 다른 몸이 태어난다. \n\n희귀질환은 정상에서 벗어난 기이한 목록이 아니요\n단지, 무엇이 어디에서 갈라지고, 회전하고, 융합하며\n끝내 제자리를 찾아가는지 거꾸로 보여주는 해부학의 자연실험이기에\n\n때로는, 정상적인 몸을 가장 잘 설명하는 것은 비정상인 『몸의 예외들』 일지도 모른다.",
+  "cover": "assets/cover.png"
+}

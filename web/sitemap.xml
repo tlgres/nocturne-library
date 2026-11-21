@@ -61,7 +61,7 @@
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=everyday-thought</loc>
-    <lastmod>2026-11-13</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=history-of-med-ethics</loc>
@@ -77,10 +77,14 @@
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=today-song</loc>
-    <lastmod>2026-11-14</lastmod>
+    <lastmod>2026-11-20</lastmod>
   </url>
   <url>
     <loc>https://tlgres.github.io/nocturne-library/book.html?series=prev-med</loc>
     <lastmod>2026-11-13</lastmod>
+  </url>
+  <url>
+    <loc>https://tlgres.github.io/nocturne-library/book.html?series=anatomy-rare-case</loc>
+    <lastmod>2026-11-17</lastmod>
   </url>
 </urlset>
