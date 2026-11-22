@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-11-16",
-  "updatedAt": "2026-11-17",
+  "updatedAt": "2026-11-21",
   "lectures": [
     {
       "id": "01",
@@ -53,6 +53,105 @@
       "updatedAt": "2026-11-17",
       "characters": 25324,
       "readMinutes": 47
+    },
+    {
+      "id": "06",
+      "file": "06.md",
+      "title": "6강. 대장과 항문 — 고정되지 않은 것들의 운명",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 26397,
+      "readMinutes": 48
+    },
+    {
+      "id": "07",
+      "file": "07.md",
+      "title": "7강. 간담도와 문맥 — 우회로가 만든 질병",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 27202,
+      "readMinutes": 50
+    },
+    {
+      "id": "08",
+      "file": "08.md",
+      "title": "8강. 대혈관과 말초혈관 — 혈관을 가두는 구조들",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 25551,
+      "readMinutes": 47
+    },
+    {
+      "id": "09",
+      "file": "09.md",
+      "title": "9강. 신장과 요관 — 소변이 길을 잃는 순간",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 27833,
+      "readMinutes": 51
+    },
+    {
+      "id": "10",
+      "file": "10.md",
+      "title": "10강. 여성 골반 — 장기가 제자리를 벗어날 때",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 25752,
+      "readMinutes": 47
+    },
+    {
+      "id": "11",
+      "file": "11.md",
+      "title": "11강. 남성 생식기와 회음부 — 좁은 통로에 갇힌 구조들",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 27181,
+      "readMinutes": 50
+    },
+    {
+      "id": "12",
+      "file": "12.md",
+      "title": "12강. 두개저와 뇌척수액 — 닫힌 두개골의 숨은 통로들",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 30472,
+      "readMinutes": 56
+    },
+    {
+      "id": "13",
+      "file": "13.md",
+      "title": "13강. 말초신경 — 신경이 지나가는 좁은 문들",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 29807,
+      "readMinutes": 55
+    },
+    {
+      "id": "14",
+      "file": "14.md",
+      "title": "14강. 근골격계 — 뼈와 힘줄이 서로의 길을 막을 때",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 31284,
+      "readMinutes": 57
+    },
+    {
+      "id": "15",
+      "file": "15.md",
+      "title": "15강. 눈과 귀, 얼굴 — 몇 밀리미터의 해부학이 운명을 바꿀 때",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 29562,
+      "readMinutes": 54
+    },
+    {
+      "id": "16",
+      "file": "16.md",
+      "title": "16강. 혈관·근막·체강의 경계 — 압력이 흐르고 장기가 길을 잃을 때",
+      "createdAt": "2026-11-21",
+      "updatedAt": "2026-11-21",
+      "characters": 30757,
+      "readMinutes": 56
     }
   ],
   "prologue": "인체는 놀라울 만큼 일정한 설계도를 따른다.\n그럼에도, 언제나 그대로 만들어지는 것은 아니다. \n\n혈관 하나가 다른 길을 택하고, 장기가 반대편에 놓이며, \n발생 과정의 작은 문 하나가 닫히지 않는 순간 전혀 다른 몸이 태어난다. \n\n희귀질환은 정상에서 벗어난 기이한 목록이 아니요\n단지, 무엇이 어디에서 갈라지고, 회전하고, 융합하며\n끝내 제자리를 찾아가는지 거꾸로 보여주는 해부학의 자연실험이기에\n\n때로는, 정상적인 몸을 가장 잘 설명하는 것은 비정상인 『몸의 예외들』 일지도 모른다.",
