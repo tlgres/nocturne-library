@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>해체된 의미의 서재 · Authoring Wizard</title>
-  <link rel="stylesheet" href="wizard.css?v=0.21.0">
+  <link rel="stylesheet" href="wizard.css?v=0.24.2">
 </head>
 <body>
   <header class="topbar">
@@ -15,6 +15,7 @@
     <div class="repo-strip">
       <span id="repoState" class="repo-state">Repository 미선택</span>
       <button id="reconnectBtn" class="ghost">최근 폴더 다시 연결</button>
+      <button id="refreshVoiceIndexBtn" class="ghost">Voice index 갱신</button>
       <button id="chooseRepoBtn" class="primary">Repository 폴더 선택</button>
     </div>
   </header>
@@ -97,15 +98,21 @@
         <div id="coverPreview" class="cover-preview"><span>표지 없음</span></div>
         <div class="cover-actions"><div id="coverPath" class="muted">이미지 없음 · 제목형 표지를 사용합니다.</div><button id="pickCoverBtn" type="button" class="ghost">표지 이미지 선택</button><button id="clearCoverBtn" type="button" class="ghost danger">표지 제거</button></div>
       </div>
+      <div class="field">
+        <label>책 진입 음성 <span class="muted">WAV · 선택</span></label>
+        <div id="bookIntroPath" class="muted">음성 없음</div>
+        <div class="source-actions"><button id="pickBookIntroBtn" type="button" class="ghost">WAV 선택</button><button id="clearBookIntroBtn" type="button" class="ghost danger">음성 제거</button></div>
+        <small class="field-help">책 서가(book.html)에 진입할 때 한 번 재생합니다. 저장 시 시리즈 assets/book-intro.wav로 복사됩니다.</small>
+      </div>
       <div class="dialog-actions"><button value="cancel" class="ghost">취소</button><button id="saveSeriesMetaBtn" value="default" class="primary">책 정보 저장</button></div>
     </form>
   </dialog>
 
   <script src="../../web/core.js"></script>
-  <script src="repository.js?v=0.21.0"></script>
-  <script src="validator.js?v=0.21.0"></script>
-  <script src="preview.js?v=0.21.0"></script>
-  <script src="wizard.js?v=0.21.0"></script>
+  <script src="repository.js?v=0.24.2"></script>
+  <script src="validator.js?v=0.24.2"></script>
+  <script src="preview.js?v=0.24.2"></script>
+  <script src="wizard.js?v=0.24.2"></script>
 
   <dialog id="replaceDialog">
     <form method="dialog" class="dialog-form" id="replaceForm">

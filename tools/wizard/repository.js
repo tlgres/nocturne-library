@@ -100,6 +100,7 @@
       this.root = handle;
       await this.verify();
       await this.reload();
+      await this.refreshVoiceIndex();
       await this.refreshSeoFiles();
     }
 
@@ -171,6 +172,50 @@
         }
       }
       return this.series;
+    }
+
+    async refreshVoiceIndex() {
+      // Static web pages cannot enumerate server directories. The Wizard has
+      // repository access, so it builds a tiny manifest from web/audio/*.wav.
+      const index = { schemaVersion: 1, generatedAt: new Date().toISOString(), transition: [], cast: { ED: {}, MUTE: {} } };
+      let audioDir;
+      try { audioDir = await this.getDirectory('web/audio', false); }
+      catch (_) {
+        await this.getDirectory('web/audio', true);
+        await this.writeJson('web/audio/voice-index.json', index);
+        return index;
+      }
+
+      const wavNames = async dir => {
+        const out = [];
+        for await (const entry of dir.values()) {
+          if (entry.kind === 'file' && /\.wav$/i.test(entry.name)) out.push(entry.name);
+        }
+        return out.sort((a,b) => a.localeCompare(b));
+      };
+
+      for await (const entry of audioDir.values()) {
+        if (entry.kind !== 'directory') continue;
+        const top = entry.name.toLowerCase();
+        if (top === 'transition' || top === 'lecture-transition' || top === 'lecture_transition') {
+          const names = await wavNames(entry);
+          index.transition.push(...names.map(name => `audio/${entry.name}/${name}`));
+          continue;
+        }
+
+        const speaker = top === 'ed' ? 'ED' : top === 'mute' ? 'MUTE' : '';
+        if (!speaker) continue;
+        for await (const emotionDir of entry.values()) {
+          if (emotionDir.kind !== 'directory') continue;
+          const emotion = emotionDir.name.toLowerCase();
+          const names = await wavNames(emotionDir);
+          if (names.length) index.cast[speaker][emotion] = names.map(name => `audio/${entry.name}/${emotionDir.name}/${name}`);
+        }
+      }
+
+      index.transition.sort((a,b) => a.localeCompare(b));
+      await this.writeJson('web/audio/voice-index.json', index);
+      return index;
     }
 
     async refreshSeoFiles() {
@@ -321,6 +366,8 @@
       if (prologue) series.meta.prologue = prologue; else delete series.meta.prologue;
       if (data.cover === null) delete series.meta.cover;
       else if (typeof data.cover === 'string' && data.cover) series.meta.cover = data.cover;
+      if (data.bookIntroAudio === null) delete series.meta.bookIntroAudio;
+      else if (typeof data.bookIntroAudio === 'string' && data.bookIntroAudio) series.meta.bookIntroAudio = data.bookIntroAudio;
       series.meta.updatedAt = new Date().toISOString().slice(0, 10);
       await this.writeJson(`${series.base}/meta.json`, series.meta);
       await this.reload();
@@ -350,6 +397,15 @@
       const extMatch = /\.(png|jpe?g|webp)$/i.exec(file.name || '');
       const ext = extMatch ? extMatch[1].toLowerCase().replace('jpeg', 'jpg') : 'webp';
       const filename = `cover.${ext}`;
+      await this.getDirectory(`${series.base}/assets`, true);
+      await this.writeFile(`${series.base}/assets/${filename}`, file);
+      return `assets/${filename}`;
+    }
+
+    async saveBookIntroAsset(series, file) {
+      if (!series?.meta) throw new Error('시리즈가 선택되지 않았습니다.');
+      if (!/\.wav$/i.test(file?.name || '')) throw new Error('책 진입 음성은 WAV 파일을 사용하세요.');
+      const filename = 'book-intro.wav';
       await this.getDirectory(`${series.base}/assets`, true);
       await this.writeFile(`${series.base}/assets/${filename}`, file);
       return `assets/${filename}`;

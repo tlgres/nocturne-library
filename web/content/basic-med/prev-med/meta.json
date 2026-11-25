@@ -7,7 +7,7 @@
   "language": "ko",
   "status": "ongoing",
   "createdAt": "2026-11-12",
-  "updatedAt": "2026-11-13",
+  "updatedAt": "2026-11-24",
   "lectures": [
     {
       "id": "01",
@@ -161,8 +161,108 @@
       "updatedAt": "2026-11-13",
       "characters": 17065,
       "readMinutes": 32
+    },
+    {
+      "id": "18",
+      "file": "18.md",
+      "title": "18강. 독성은 어디에서 시작되는가 — 환경역학과 위해성 평가의 과학",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 21097,
+      "readMinutes": 39
+    },
+    {
+      "id": "19",
+      "file": "19.md",
+      "title": "19강. 우리가 들이마시고 마시는 환경 — 대기·수질·식품오염과 기후변화의 보건학",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 21442,
+      "readMinutes": 39
+    },
+    {
+      "id": "20",
+      "file": "20.md",
+      "title": "20강. 일터는 어떻게 사람을 병들게 하는가 — 산업보건체계와 직업병의 인정",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 25359,
+      "readMinutes": 47
+    },
+    {
+      "id": "21",
+      "file": "21.md",
+      "title": "21강. 일터에 남겨진 병의 흔적 — 직업성 중독·진폐증·소음성 난청과 작업관련 질환",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 23423,
+      "readMinutes": 43
+    },
+    {
+      "id": "22",
+      "file": "22.md",
+      "title": "22강. 의료는 왜 시장에 맡겨지지 않는가 — 보건의료체계와 보건경제학",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 22946,
+      "readMinutes": 42
+    },
+    {
+      "id": "23",
+      "file": "23.md",
+      "title": "23강. 진료비는 누가 결정하는가 — 한국의 건강보험·의료급여와 수가체계",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 21260,
+      "readMinutes": 39
+    },
+    {
+      "id": "24",
+      "file": "24.md",
+      "title": "24강. 좋은 병원은 무엇으로 증명되는가 — 의료의 질·환자안전과 의료전달체계",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 24455,
+      "readMinutes": 45
+    },
+    {
+      "id": "25",
+      "file": "25.md",
+      "title": "25강. 건강은 누구의 책임인가 — 건강행동·사회적 결정요인과 불평등의 역학",
+      "createdAt": "2026-11-23",
+      "updatedAt": "2026-11-23",
+      "characters": 22640,
+      "readMinutes": 42
+    },
+    {
+      "id": "26",
+      "file": "26.md",
+      "title": "26강. 공동체의 건강은 어떻게 만들어지는가 — 지역사회보건과 공중보건정책의 설계",
+      "createdAt": "2026-11-24",
+      "updatedAt": "2026-11-24",
+      "characters": 24241,
+      "readMinutes": 45
+    },
+    {
+      "id": "27",
+      "file": "27.md",
+      "title": "27강. 아직 아프지 않은 사람을 진료하는 법 — 임상예방의학과 선별검사의 의사결정",
+      "createdAt": "2026-11-24",
+      "updatedAt": "2026-11-24",
+      "characters": 21740,
+      "readMinutes": 40
+    },
+    {
+      "id": "28",
+      "file": "28.md",
+      "title": "28강. 국경 없는 건강 — 국제보건·보편적 건강보장과 One Health",
+      "createdAt": "2026-11-24",
+      "updatedAt": "2026-11-24",
+      "characters": 29334,
+      "readMinutes": 54
     }
   ],
   "prologue": "환자 한 사람을 치료하는 동안에도 그 뒤에는 보이지 않는 수많은 사람이 서 있다.  같은 병에 걸리지 않은 사람, 아직 위험에 노출되지 않은 사람, 의료에 닿지 못한 사람, 그리고 정책 하나로 삶의 궤적이 달라질 사람들이다. \n\n예방의학은 진료실의 시선을 인구 전체로 넓힌다. 질병이 왜 이 사람에게 생겼는지를 넘어 어디에서 더 많이 생기는지, 무엇을 바꾸면 덜 생기는지, 한정된 자원을 누구에게 어떻게 나눌지를 묻는다. \n\n여기에서 의학은 생물학을 넘어 통계학과 경제학, 환경과 제도, 사회와 정치의 언어를 배우기 시작한다.",
-  "cover": "assets/cover.png"
+  "cover": "assets/cover.png",
+  "bookIntroAudio": "assets/book-intro.wav"
 }

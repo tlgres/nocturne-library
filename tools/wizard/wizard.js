@@ -1,9 +1,9 @@
 (() => {
   const repo = new WizardRepository.Repository();
   const $ = id => document.getElementById(id);
-  const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
+  const state = { series:null, existingLecture:null, validation:null, speakerDrafts:{}, dirty:false, pendingCoverFile:null, coverCleared:false, pendingBookIntroFile:null, bookIntroCleared:false, expandedCats:new Set(), expandedSeries:new Set() };
   const el = {};
-  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','lectureVideoUrl','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','saveSeriesMetaBtn','insertImageBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
+  const ids = ['repoState','reconnectBtn','chooseRepoBtn','newSeriesBtn','libraryTree','categorySelect','seriesSelect','newPrologueBtn','newLectureBtn','modeBanner','lectureTitle','lectureId','lectureFile','lectureVideoUrl','sourceInput','analyzeBtn','clearBtn','speakerPanel','speakerList','validationSummary','stats','issues','preview','saveMessage','saveBtn','seriesDialog','seriesForm','newSeriesCategory','newSeriesId','newSeriesTitle','newSeriesDescription','newSeriesKind','newSeriesCategoryField','createSeriesBtn','editSeriesBtn','seriesEditDialog','seriesEditForm','editSeriesTitle','editSeriesDescription','editSeriesPrologue','prologueCount','coverPreview','coverPath','pickCoverBtn','clearCoverBtn','bookIntroPath','pickBookIntroBtn','clearBookIntroBtn','refreshVoiceIndexBtn','saveSeriesMetaBtn','insertImageBtn','replaceToolBtn','stripLinksBtn','stripBoldBtn','deleteLectureBtn','replaceDialog','replaceFind','replaceWith','replaceCount','replaceAllBtn'];
 
   function initEls() { ids.forEach(id => el[id] = $(id)); }
   function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -223,11 +223,13 @@
   function openSeriesEditor() {
     if (!state.series) return setMessage('시리즈를 먼저 선택하세요.', 'error');
     state.pendingCoverFile = null; state.coverCleared = false;
+    state.pendingBookIntroFile = null; state.bookIntroCleared = false;
     el.editSeriesTitle.value = state.series.meta.title || '';
     el.editSeriesDescription.value = state.series.meta.description || '';
     el.editSeriesPrologue.value = state.series.meta.prologue || '';
     el.prologueCount.textContent = `${el.editSeriesPrologue.value.length} / 500`;
     renderCoverPreview(state.series);
+    if (el.bookIntroPath) el.bookIntroPath.textContent = state.series.meta.bookIntroAudio || '음성 없음';
     el.seriesEditDialog.showModal();
   }
 
@@ -238,11 +240,16 @@
       if (state.pendingCoverFile) cover = await repo.saveCoverAsset(state.series, state.pendingCoverFile);
       else if (state.coverCleared) cover = null;
       else cover = state.series.meta.cover || '';
-      const updated = await repo.updateSeriesMetadata(state.series, { title:el.editSeriesTitle.value, description:el.editSeriesDescription.value, prologue:el.editSeriesPrologue.value, cover });
+      let bookIntroAudio;
+      if (state.pendingBookIntroFile) bookIntroAudio = await repo.saveBookIntroAsset(state.series, state.pendingBookIntroFile);
+      else if (state.bookIntroCleared) bookIntroAudio = null;
+      else bookIntroAudio = state.series.meta.bookIntroAudio || '';
+      const updated = await repo.updateSeriesMetadata(state.series, { title:el.editSeriesTitle.value, description:el.editSeriesDescription.value, prologue:el.editSeriesPrologue.value, cover, bookIntroAudio });
+      await repo.refreshVoiceIndex();
       state.series = updated;
       el.seriesEditDialog.close();
       renderTree(); populateSeriesSelect(updated.meta.id);
-      setMessage('책 정보와 표지를 저장했습니다.', 'ok');
+      setMessage('책 정보 · 표지 · 음성 설정을 저장했습니다.', 'ok');
     } catch (err) { setMessage(err.message, 'error'); }
   }
 
@@ -295,6 +302,25 @@
     [el.lectureId, el.lectureFile].forEach(x => x.addEventListener('input', analyze));
     el.pickCoverBtn.addEventListener('click', async () => { try { const [handle] = await showOpenFilePicker({multiple:false,types:[{description:'Cover image',accept:{'image/*':['.png','.jpg','.jpeg','.webp']}}]}); state.pendingCoverFile = await handle.getFile(); state.coverCleared = false; renderCoverPreview(state.series, state.pendingCoverFile); } catch(err) { if(err.name !== 'AbortError') setMessage(err.message,'error'); } });
     el.clearCoverBtn.addEventListener('click', () => { state.pendingCoverFile = null; state.coverCleared = true; renderCoverPreview(state.series); });
+    el.pickBookIntroBtn?.addEventListener('click', async () => {
+      try {
+        const [handle] = await showOpenFilePicker({multiple:false,types:[{description:'Book intro voice',accept:{'audio/wav':['.wav'],'audio/x-wav':['.wav']}}]});
+        state.pendingBookIntroFile = await handle.getFile();
+        state.bookIntroCleared = false;
+        if (el.bookIntroPath) el.bookIntroPath.textContent = `${state.pendingBookIntroFile.name} · 저장 시 assets/book-intro.wav`;
+      } catch(err) { if(err.name !== 'AbortError') setMessage(err.message,'error'); }
+    });
+    el.clearBookIntroBtn?.addEventListener('click', () => {
+      state.pendingBookIntroFile = null; state.bookIntroCleared = true;
+      if (el.bookIntroPath) el.bookIntroPath.textContent = '음성 없음';
+    });
+    el.refreshVoiceIndexBtn?.addEventListener('click', async () => {
+      try {
+        const index = await repo.refreshVoiceIndex();
+        const castCount = Object.values(index.cast.ED || {}).flat().length + Object.values(index.cast.MUTE || {}).flat().length;
+        setMessage(`Voice index 갱신 · transition ${index.transition.length}개 · CAST ${castCount}개`, 'ok');
+      } catch(err) { setMessage(err.message, 'error'); }
+    });
     el.editSeriesPrologue.addEventListener('input', () => el.prologueCount.textContent = `${el.editSeriesPrologue.value.length} / 500`);
     el.saveSeriesMetaBtn.addEventListener('click', saveSeriesMetadata);
 

@@ -36,7 +36,8 @@
     categories: [], catalog: [], seriesList: [], seriesPath: '', meta: null, lectureIndex: 0,
     doc: null, slides: [], sectionIndex: 0, interaction: new Map(), animators: {}, stageMotion: {MUTE:'normal', ED:'normal'},
     prefs: {...DEFAULT_PREFS}, dialogueSideMap: new Map(), reopenedCompleted:false, currentSource:'', searchCache:new Map(), searchState:{results:[],page:0,query:'',scope:'lecture'},
-    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false, noteSaveTimer:null, messagePortraits:{}, hasOpenedLecture:false, bgm:null, bgmNeedsGesture:false
+    stageView:'companions', lectureVideo:null, videoEmbedUrl:'', messageDockCollapsed:false, noteSaveTimer:null, messagePortraits:{}, hasOpenedLecture:false, bgm:null, bgmNeedsGesture:false,
+    voiceIndex:{transition:[],cast:{ED:{},MUTE:{}}}, voiceAudio:null, lastVoiceByBucket:new Map(), lastCastVoiceEvent:''
   };
 
   function loadPrefs() {
@@ -123,6 +124,48 @@
     audio.volume = Math.max(0, Math.min(1, Number(state.prefs.bgmVolume ?? .18)));
     const promise = audio.play();
     if (promise?.then) promise.then(() => { state.bgmNeedsGesture = false; }).catch(() => {});
+  }
+
+  function voicePathsForCast(speaker, emotion) {
+    const who = speaker === 'MUTE' ? 'MUTE' : speaker === 'ED' ? 'ED' : '';
+    if (!who) return [];
+    const key = String(emotion || 'normal').toLowerCase();
+    const group = state.voiceIndex?.cast?.[who] || {};
+    return Array.isArray(group[key]) ? group[key] : [];
+  }
+  function chooseVoice(paths, bucket) {
+    const list = Array.isArray(paths) ? paths.filter(Boolean) : [];
+    if (!list.length) return '';
+    const previous = state.lastVoiceByBucket.get(bucket) || '';
+    const candidates = list.length > 1 ? list.filter(x => x !== previous) : list;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)] || list[0];
+    state.lastVoiceByBucket.set(bucket, chosen);
+    return chosen;
+  }
+  function playVoicePath(path) {
+    if (!path || document.hidden) return;
+    try {
+      if (state.voiceAudio) { state.voiceAudio.pause(); state.voiceAudio.currentTime = 0; }
+      const audio = new Audio(path);
+      audio.preload = 'auto';
+      state.voiceAudio = audio;
+      const promise = audio.play();
+      if (promise?.catch) promise.catch(() => {});
+    } catch (_) {}
+  }
+  function playRandomVoice(paths, bucket) {
+    const path = chooseVoice(paths, bucket);
+    if (path) playVoicePath(path);
+  }
+  function maybePlayCastVoice(castState) {
+    const item = castState?.item;
+    if (!item) return;
+    const lecture = currentLecture();
+    const emotion = String(item.expression || 'normal').toLowerCase();
+    const eventKey = `${state.meta?.id || ''}:${lecture?.id || ''}:${state.sectionIndex}:${castState.index}:${item.speaker}:${emotion}`;
+    if (state.lastCastVoiceEvent === eventKey) return;
+    state.lastCastVoiceEvent = eventKey;
+    playRandomVoice(voicePathsForCast(item.speaker, emotion), `cast:${item.speaker}:${emotion}`);
   }
 
   function updatePrefs(patch) { state.prefs = {...state.prefs, ...patch}; savePrefs(); applyPrefs(); }
@@ -727,6 +770,8 @@
       return;
     }
 
+    if (mode !== 'quiet' && castVisible) maybePlayCastVoice(castState);
+
     if (mode === 'quiet') {
       clearInteractionSurfaces();
       state.animators.MUTE?.stop(); state.animators.ED?.stop();
@@ -868,6 +913,7 @@
     }
     ui.lectureTransition.hidden=false; ui.lectureTransition.setAttribute('aria-hidden','false');
     ui.lectureTransition.classList.remove('is-active'); void ui.lectureTransition.offsetWidth; ui.lectureTransition.classList.add('is-active');
+    playRandomVoice(state.voiceIndex?.transition || [], 'transition');
     setTimeout(()=>{ui.lectureTransition?.classList.remove('is-active');},3000);
     setTimeout(()=>{if(ui.lectureTransition){ui.lectureTransition.hidden=true;ui.lectureTransition.setAttribute('aria-hidden','true');}},3180);
   }
@@ -924,9 +970,14 @@
   }
 
   async function loadBootData() {
-    const [cats, library] = await Promise.all([fetchJson('categories.json'), fetchJson('library.json')]);
+    const [cats, library, voices] = await Promise.all([
+      fetchJson('categories.json'),
+      fetchJson('library.json'),
+      fetchJson('audio/voice-index.json').catch(() => ({transition:[],cast:{ED:{},MUTE:{}}}))
+    ]);
     state.categories = cats.categories || [];
     state.catalog = library.series || [];
+    state.voiceIndex = voices || {transition:[],cast:{ED:{},MUTE:{}}};
     state.seriesList = await Promise.all(state.catalog.map(async item => ({...item, data: await fetchJson(item.meta)})));
     renderLibraryNavigator();
   }
@@ -977,6 +1028,7 @@
     }
     state.lectureIndex = Math.min(Math.max(index,0), state.meta.lectures.length - 1);
     state.interaction.clear();
+    state.lastCastVoiceEvent = '';
     const lecture = state.meta.lectures[state.lectureIndex];
     localStorage.setItem(`deconstructed:lastlecture:v1:${state.meta.id}`, lecture.id);
     ui.status.textContent = 'Loading…';

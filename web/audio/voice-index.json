@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-11-22T16:32:14.599Z",
+  "transition": [
+    "audio/transition/t_01.wav",
+    "audio/transition/t_02.wav",
+    "audio/transition/t_03.wav",
+    "audio/transition/t_04.wav",
+    "audio/transition/t_05.wav",
+    "audio/transition/t_06.wav",
+    "audio/transition/t_07.wav",
+    "audio/transition/t_08.wav",
+    "audio/transition/t_09.wav",
+    "audio/transition/t_10.wav",
+    "audio/transition/t_11.wav"
+  ],
+  "cast": {
+    "ED": {
+      "ask": [
+        "audio/Ed/ask/01.wav",
+        "audio/Ed/ask/02.wav",
+        "audio/Ed/ask/03.wav",
+        "audio/Ed/ask/04.wav",
+        "audio/Ed/ask/05.wav",
+        "audio/Ed/ask/06.wav",
+        "audio/Ed/ask/07.wav"
+      ],
+      "curious": [
+        "audio/Ed/curious/01.wav",
+        "audio/Ed/curious/02.wav",
+        "audio/Ed/curious/03.wav",
+        "audio/Ed/curious/audio (3).wav",
+        "audio/Ed/curious/audio (6).wav",
+        "audio/Ed/curious/audio (7).wav",
+        "audio/Ed/curious/audio (8).wav"
+      ],
+      "skeptical": [
+        "audio/Ed/skeptical/ed_skeptical_01.wav",
+        "audio/Ed/skeptical/ed_skeptical_02.wav",
+        "audio/Ed/skeptical/ed_skeptical_03.wav",
+        "audio/Ed/skeptical/ed_skeptical_04.wav"
+      ],
+      "smug": [
+        "audio/Ed/smug/01.wav",
+        "audio/Ed/smug/02.wav",
+        "audio/Ed/smug/03.wav",
+        "audio/Ed/smug/04.wav"
+      ],
+      "surprised": [
+        "audio/Ed/surprised/01.wav",
+        "audio/Ed/surprised/02.wav",
+        "audio/Ed/surprised/03.wav",
+        "audio/Ed/surprised/04.wav",
+        "audio/Ed/surprised/05.wav"
+      ]
+    },
+    "MUTE": {
+      "confused": [
+        "audio/Mute/confused/01.wav",
+        "audio/Mute/confused/02.wav",
+        "audio/Mute/confused/03.wav",
+        "audio/Mute/confused/04.wav",
+        "audio/Mute/confused/05.wav"
+      ],
+      "explain": [
+        "audio/Mute/explain/01.wav",
+        "audio/Mute/explain/02.wav",
+        "audio/Mute/explain/03.wav",
+        "audio/Mute/explain/04.wav",
+        "audio/Mute/explain/05.wav"
+      ],
+      "realize": [
+        "audio/Mute/realize/01.wav",
+        "audio/Mute/realize/02.wav",
+        "audio/Mute/realize/03.wav",
+        "audio/Mute/realize/04.wav",
+        "audio/Mute/realize/05.wav"
+      ],
+      "serious": [
+        "audio/Mute/serious/01.wav",
+        "audio/Mute/serious/02.wav",
+        "audio/Mute/serious/03.wav",
+        "audio/Mute/serious/04.wav",
+        "audio/Mute/serious/05.wav",
+        "audio/Mute/serious/06.wav"
+      ]
+    }
+  }
+}
