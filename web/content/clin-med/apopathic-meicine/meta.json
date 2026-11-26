@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "id": "apopathic-meicine",
+  "title": "부정의학",
+  "category": "clin-med",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-11-26",
+  "updatedAt": "2026-11-26",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 갑상선중독증 — 두 약물 중 하나를 죽여야 한다",
+      "createdAt": "2026-11-26",
+      "updatedAt": "2026-11-26",
+      "characters": 24386,
+      "readMinutes": 45
+    },
+    {
+      "id": "02",
+      "file": "02.md",
+      "title": "2강. 신장을 보호하는 약은 왜 이뇨제가 아닌가 — 단백뇨와 신장보호의 역설",
+      "createdAt": "2026-11-26",
+      "updatedAt": "2026-11-26",
+      "characters": 24964,
+      "readMinutes": 46
+    },
+    {
+      "id": "03",
+      "file": "03.md",
+      "title": "3강. 막혔다고 뚫어야 하는가 — 담도폐쇄와 췌담도 중재의 역설",
+      "createdAt": "2026-11-26",
+      "updatedAt": "2026-11-26",
+      "characters": 28628,
+      "readMinutes": 53
+    },
+    {
+      "id": "04",
+      "file": "04.md",
+      "title": "4강. 통증을 없애는 약은 왜 정답이 아닌가 — 월경통과 여성호르몬 치료의 역설",
+      "createdAt": "2026-11-26",
+      "updatedAt": "2026-11-26",
+      "characters": 26246,
+      "readMinutes": 48
+    }
+  ]
+}

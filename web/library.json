@@ -60,6 +60,10 @@
     {
       "path": "content/clin-med/anatomy-rare-case",
       "meta": "content/clin-med/anatomy-rare-case/meta.json"
+    },
+    {
+      "path": "content/clin-med/apopathic-meicine",
+      "meta": "content/clin-med/apopathic-meicine/meta.json"
     }
   ]
 }
