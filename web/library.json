@@ -64,6 +64,14 @@
     {
       "path": "content/clin-med/apopathic-meicine",
       "meta": "content/clin-med/apopathic-meicine/meta.json"
+    },
+    {
+      "path": "content/science/inorganic-chem-forfun",
+      "meta": "content/science/inorganic-chem-forfun/meta.json"
+    },
+    {
+      "path": "content/language/guofeng-critics",
+      "meta": "content/language/guofeng-critics/meta.json"
     }
   ]
 }

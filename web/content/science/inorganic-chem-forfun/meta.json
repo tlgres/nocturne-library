@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "id": "inorganic-chem-forfun",
+  "title": "무기화학의 기묘한 동물원",
+  "category": "science",
+  "description": "",
+  "language": "ko",
+  "status": "ongoing",
+  "createdAt": "2026-11-27",
+  "updatedAt": "2026-11-27",
+  "lectures": [
+    {
+      "id": "01",
+      "file": "01.md",
+      "title": "1강. 산소보다 일산화탄소가 사랑받는 이유",
+      "createdAt": "2026-11-27",
+      "updatedAt": "2026-11-27",
+      "characters": 7272,
+      "readMinutes": 14
+    }
+  ]
+}
